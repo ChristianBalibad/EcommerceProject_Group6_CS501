@@ -11,6 +11,7 @@ interface ProductCardProps {
   price: string;
   originalPrice?: string;
   href?: string;
+  isDragging?: boolean;
 }
 
 export default function ProductCard({
@@ -21,12 +22,24 @@ export default function ProductCard({
   price,
   originalPrice,
   href = '#',
+  isDragging = false,
 }: ProductCardProps) {
   return (
     <Link
       href={href}
       className="group bg-white rounded-lg overflow-hidden flex flex-col transition-shadow duration-300 ease-in-out hover:shadow-lg cursor-pointer"
-      style={{ width: '368px', height: '540px' }}
+      style={{ 
+        width: '368px', 
+        height: '540px',
+        pointerEvents: isDragging ? 'none' : 'auto',
+      }}
+      draggable="false"
+      onClick={(e) => {
+        if (isDragging) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
     >
       <div className="relative w-full bg-gray-100 flex-shrink-0" style={{ height: '324px' }}>
         <Image
