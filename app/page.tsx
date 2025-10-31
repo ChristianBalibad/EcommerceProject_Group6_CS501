@@ -1,6 +1,7 @@
 import Hero from "@/components/layout/Hero";
 import FeaturedProducts from "@/components/feature/FeaturedProducts";
 import NewArrivals from "@/components/arrivals/NewArrivals";
+import CustomerReviews from "@/components/review/CustomerReviews";
 
 export default function Home() {
   return (
@@ -8,6 +9,7 @@ export default function Home() {
       <Hero />
       <FeaturedProducts />
       <NewArrivals />
+      <CustomerReviews />
     </main>
   );
 }
