@@ -22,7 +22,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-gray-400 text-sm text-center">
-              @2020 - 2024 Undefined Inc.
+              @2020 - 2025 Undefined Inc.
             </p>
 
             <div className="flex items-center gap-4">
