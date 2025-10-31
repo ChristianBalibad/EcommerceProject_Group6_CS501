@@ -23,7 +23,11 @@ export default function ProductCard({
   href = '#',
 }: ProductCardProps) {
   return (
-    <div className="group bg-white rounded-lg overflow-hidden flex flex-col transition-shadow duration-300 ease-in-out hover:shadow-lg" style={{ width: '368px', height: '540px' }}>
+    <Link
+      href={href}
+      className="group bg-white rounded-lg overflow-hidden flex flex-col transition-shadow duration-300 ease-in-out hover:shadow-lg cursor-pointer"
+      style={{ width: '368px', height: '540px' }}
+    >
       <div className="relative w-full bg-gray-100 flex-shrink-0" style={{ height: '324px' }}>
         <Image
           src={imageSrc}
@@ -56,11 +60,7 @@ export default function ProductCard({
           </p>
         </div>
 
-        <Link
-          href={href}
-          className="underline text-sm flex items-center justify-between w-full transition-all duration-300 ease-in-out mt-auto"
-          style={{ opacity: 0.95 }}
-        >
+        <div className="underline text-sm flex items-center justify-between w-full transition-all duration-300 ease-in-out mt-auto" style={{ opacity: 0.95 }}>
           <span className="text-gray-400 transition-colors duration-300 ease-in-out group-hover:text-black group-hover:font-bold">Buy Now</span>
           <svg
             className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out text-black"
@@ -75,9 +75,9 @@ export default function ProductCard({
               d="M9 5l7 7-7 7"
             />
           </svg>
-        </Link>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
