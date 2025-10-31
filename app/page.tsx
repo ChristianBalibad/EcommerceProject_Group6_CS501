@@ -1,8 +1,9 @@
 import Hero from "@/components/layout/Hero";
 import FeaturedProducts from "@/components/feature/FeaturedProducts";
 import NewArrivals from "@/components/arrivals/NewArrivals";
-import CustomerReviews from "@/components/review/CustomerReviews";
+import FAQSection from "@/components/faq/FAQSection";
 import CallToAction from "@/components/cta/CallToAction";
+import CustomerReviews from "@/components/review/CustomerReviews";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <NewArrivals />
       <CustomerReviews />
       <CallToAction />
+      <FAQSection />
     </main>
   );
 }

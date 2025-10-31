@@ -95,7 +95,7 @@ export default function CustomerReviews() {
   }, []);
 
   return (
-    <section className="w-full bg-gray-100 py-16 md:py-24">
+    <section className="w-full bg-gray-100 py-16 md:py-24 pb-4 md:pb-50">
       <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1152px' }}>
         <h2 className="text-3xl md:text-4xl font-bold text-black text-center mb-12">
           Hear from our customers
