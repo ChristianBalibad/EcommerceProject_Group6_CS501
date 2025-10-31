@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 export default function CallToAction() {
   return (
-    <section className="w-full relative py-8 md:py-12 -my-23 md:-my-43 z-10">
+    <section className="w-full relative py-8 md:py-20 -my-25 md:-my-45 z-10">
       <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1152px' }}>
         <div className="relative rounded-3xl overflow-visible bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-8 md:px-12 lg:px-16 py-6 md:py-8" style={{ height: '202px', minHeight: '202px' }}>
           <div className="flex flex-row items-center justify-between h-full relative z-10 gap-6 md:gap-8">
