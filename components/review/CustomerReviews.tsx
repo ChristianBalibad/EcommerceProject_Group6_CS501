@@ -105,6 +105,7 @@ export default function CustomerReviews() {
           <div
             ref={scrollContainerRef}
             className={`flex gap-6 overflow-x-auto overflow-y-visible pb-4 scrollbar-hide cursor-grab ${isDragging ? 'cursor-grabbing' : ''} select-none`}
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}

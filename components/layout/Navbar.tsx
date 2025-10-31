@@ -1,9 +1,22 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function Navbar() {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const categories = [
+    { label: 'Shoes', href: '/products?category=shoes' },
+    { label: 'Tops & Tshirts', href: '/products?category=tops-tshirts' },
+    { label: 'Shorts', href: '/products?category=shorts' },
+    { label: 'Hoodies & Jackets', href: '/products?category=hoodies-jackets' },
+    { label: 'Trousers & Tights', href: '/products?category=trousers-tights' },
+    { label: 'Dress', href: '/products?category=dress' },
+  ];
+
   return (
     <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
       <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1544px' }}>
@@ -49,7 +62,7 @@ export default function Navbar() {
           <div className="flex items-center gap-6 flex-shrink-0">
             <div className="hidden md:flex items-center gap-6">
               <Link
-                href="#"
+                href="/products?offers=up-to-60-off"
                 className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
               >
                 Up to 60% OFF*
@@ -61,9 +74,13 @@ export default function Navbar() {
               >
                 New Arrivals
               </Link>
-              <div className="relative group">
-                <Link
-                  href="/products"
+              <div 
+                className="relative" 
+                ref={dropdownRef}
+                onMouseEnter={() => setIsDropdownOpen(true)}
+                onMouseLeave={() => setIsDropdownOpen(false)}
+              >
+                <button
                   className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
                 >
                   Categories
@@ -73,7 +90,7 @@ export default function Navbar() {
                     viewBox="0 0 12 12"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    className="text-gray-600"
+                    className={`text-gray-600 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
                   >
                     <path
                       d="M3 4.5L6 7.5L9 4.5"
@@ -83,7 +100,26 @@ export default function Navbar() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                </Link>
+                </button>
+
+                {isDropdownOpen && (
+                  <>
+                    <div className="absolute top-full left-0 w-full h-2"></div>
+                    <div className="absolute top-full left-0 pt-2 w-48 bg-transparent z-50">
+                      <div className="bg-white rounded-lg border border-gray-200 shadow-lg overflow-hidden">
+                        {categories.map((category) => (
+                          <Link
+                            key={category.label}
+                            href={category.href}
+                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            {category.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               <Link
                 href="/about"
