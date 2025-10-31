@@ -32,4 +32,17 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.scrollbar-hide::-webkit-scrollbar-track {
+  display: none;
+  background: transparent;
+}
+
+.scrollbar-hide::-webkit-scrollbar-thumb {
+  display: none;
+  background: transparent;
 }
