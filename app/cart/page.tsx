@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CartItem from '@/components/cart/CartItem';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CartProduct {
   id: number;
@@ -55,7 +57,15 @@ const initialCartItems: CartProduct[] = [
 ];
 
 export default function CartPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [cartItems, setCartItems] = useState<CartProduct[]>(initialCartItems);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/account');
+    }
+  }, [isAuthenticated, router]);
 
   const handleQuantityChange = (id: number, quantity: number) => {
     setCartItems((prevItems) =>
@@ -93,8 +103,19 @@ export default function CartPage() {
 
   const subtotal = calculateSubtotal();
   const discount = calculateDiscount();
-  const shipping = subtotal > 0 ? 0 : 0;
+  const shipping: number = 0;
   const total = subtotal + shipping;
+
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900"></div>
+          <p className="mt-6 text-gray-600 text-lg">Redirecting...</p>
+        </div>
+      </main>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -135,7 +156,7 @@ export default function CartPage() {
             </div>
             <h1 className="text-3xl font-bold text-black mb-4">Your cart is empty</h1>
             <p className="text-gray-600 mb-8 max-w-md">
-              Looks like you haven't added any items to your cart yet. Start shopping to fill it up!
+              Looks like you haven&apos;t added any items to your cart yet. Start shopping to fill it up!
             </p>
             <Link
               href="/products"

@@ -1,12 +1,26 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 
 export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [animateCart, setAnimateCart] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuth();
+  const { itemCount, triggerAnimation } = useCart();
+
+  useEffect(() => {
+    if (triggerAnimation) {
+      setAnimateCart(true);
+      setTimeout(() => setAnimateCart(false), 600);
+    }
+  }, [triggerAnimation]);
 
   const categories = [
     { label: 'Shoes', href: '/products?category=shoes' },
@@ -132,7 +146,7 @@ export default function Navbar() {
             <div className="flex items-center gap-1">
               <Link
                 href="/cart"
-                className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors"
+                className="relative p-1.5 text-gray-600 hover:text-gray-900 transition-colors"
                 aria-label="Shopping Cart"
               >
                 <svg
@@ -145,6 +159,7 @@ export default function Navbar() {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className={animateCart ? 'animate-bounce' : ''}
                 >
                   <path
                     d="M9 22C9.55228 22 10 21.5523 10 21C10 20.4477 9.55228 20 9 20C8.44772 20 8 20.4477 8 21C8 21.5523 8.44772 22 9 22Z"
@@ -156,30 +171,84 @@ export default function Navbar() {
                     d="M1 1H5L7.68 14.39C7.77144 14.8504 8.02191 15.264 8.38755 15.5583C8.75318 15.8526 9.2107 16.009 9.68 16H19.4C19.8693 16.009 20.3268 15.8526 20.6925 15.5583C21.0581 15.264 21.3086 14.8504 21.4 14.39L23 6H6"
                   />
                 </svg>
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
               </Link>
 
-              <button
-                type="button"
-                className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors"
-                aria-label="User Account"
+              <div 
+                className="relative" 
+                ref={accountMenuRef}
+                onMouseEnter={() => setIsAccountMenuOpen(true)}
+                onMouseLeave={() => setIsAccountMenuOpen(false)}
               >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <button
+                  type="button"
+                  className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors"
+                  aria-label="User Account"
                 >
-                  <path
-                    d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                  />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </button>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path
+                      d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
+                    />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </button>
+
+                {isAccountMenuOpen && (
+                  <div className="absolute top-full right-0 pt-1 w-48 z-50">
+                    <div className="bg-white rounded-lg border border-gray-200 shadow-lg overflow-hidden">
+                      {user ? (
+                        <>
+                          <div className="px-4 py-3 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-black">{user.username}</p>
+                            <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                          </div>
+                          <Link
+                            href="/account"
+                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            My Account
+                          </Link>
+                          <button
+                            onClick={logout}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            Logout
+                          </button>
+                        </>
+                        ) : (
+                          <>
+                            <Link
+                              href="/account?mode=login"
+                              className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Sign In
+                            </Link>
+                            <Link
+                              href="/account?mode=signup"
+                              className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Create Account
+                            </Link>
+                          </>
+                        )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
