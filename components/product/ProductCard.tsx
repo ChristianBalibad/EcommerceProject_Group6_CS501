@@ -30,7 +30,7 @@ export default function ProductCard({
       className="group bg-white rounded-lg overflow-hidden flex flex-col transition-shadow duration-300 ease-in-out hover:shadow-lg cursor-pointer"
       style={{ 
         width: '368px', 
-        height: '540px',
+        height: '680px',
         pointerEvents: isDragging ? 'none' : 'auto',
       }}
       draggable="false"
@@ -41,13 +41,14 @@ export default function ProductCard({
         }
       }}
     >
-      <div className="relative w-full bg-gray-100 flex-shrink-0" style={{ height: '324px' }}>
+      <div className="relative w-full bg-gray-100 flex-shrink-0" style={{ height: '460px' }}>
         <Image
           src={imageSrc}
           alt={imageAlt}
           fill
-          className="object-cover"
+          className="object-cover pointer-events-none"
           unoptimized
+          draggable={false}
         />
       </div>
 

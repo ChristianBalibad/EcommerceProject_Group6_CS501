@@ -48,7 +48,7 @@ export default function CallToAction() {
                   5/5 • 361 REVIEWS
                 </p>
                 <Link
-                  href="/products"
+                  href="/download"
                   className="inline-block px-6 py-2 bg-black text-white rounded-lg font-medium transition-colors hover:bg-gray-900 text-sm"
                 >
                   Download

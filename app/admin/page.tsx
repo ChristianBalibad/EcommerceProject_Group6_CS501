@@ -306,6 +306,7 @@ export default function AdminPage() {
     'orange': '#FFA500',
     'purple': '#800080',
     'pink': '#FFC0CB',
+    'light-pink' : '#FFB6C1',
     'brown': '#8B4513',
     'gray': '#808080',
     'grey': '#808080',

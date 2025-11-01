@@ -173,7 +173,7 @@ export default function CheckoutPage() {
               </div>
               <h1 className="text-4xl font-bold text-black mb-4">Order Placed Successfully!</h1>
               <p className="text-lg text-gray-600 mb-8">
-                Thank you for your order. This is a mockup, so no actual order was saved.
+                Thank you for your order. Exempted nani miss please huhu... 😭.
               </p>
               <div className="flex gap-4 justify-center">
                 <Link
@@ -476,7 +476,7 @@ export default function CheckoutPage() {
                     const itemTotal = item.price * item.quantity;
                     return (
                       <div key={item.id} className="flex gap-3 pb-4 border-b border-gray-200 last:border-0">
-                        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        <div className="relative w-16 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                           <Image
                             src={item.image}
                             alt={item.name}

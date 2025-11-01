@@ -131,7 +131,6 @@ export default function ProductDetailPage() {
     }
 
     const filtered = product.imagesData.filter((img) => 
-      img.colors.length === 0 || 
       img.colors.some(c => c.toLowerCase() === selectedColor.toLowerCase())
     );
 
@@ -283,9 +282,9 @@ export default function ProductDetailPage() {
           </Link>
         </div>
 
-        <div className="flex gap-12">
-          <div className="flex-1">
-            <div ref={imageRef} className="relative w-full bg-gray-100 rounded-lg overflow-hidden mb-4" style={{ height: '600px' }}>
+        <div className="flex gap-12 justify-center">
+          <div className="w-[650px] flex-shrink-0">
+            <div ref={imageRef} className="relative w-full bg-gray-100 rounded-lg overflow-hidden mb-4" style={{ height: '850px'}}>
               {displayImages[selectedImage] && (
                 <Image
                   src={displayImages[selectedImage]}
@@ -303,7 +302,7 @@ export default function ProductDetailPage() {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative w-20 h-24 bg-gray-100 rounded-lg overflow-hidden border-2 transition-all ${
                       selectedImage === index ? 'border-gray-900' : 'border-gray-200'
                     }`}
                   >

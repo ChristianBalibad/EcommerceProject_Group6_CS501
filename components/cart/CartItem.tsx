@@ -56,7 +56,7 @@ export default function CartItem({
   return (
     <div className="flex gap-4 py-6 border-b border-gray-200">
       <Link href={href} className="flex-shrink-0">
-        <div className="relative w-24 h-24 md:w-32 md:h-32 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="relative w-24 h-32 md:w-32 md:h-40 bg-gray-100 rounded-lg overflow-hidden">
           <Image
             src={imageSrc}
             alt={imageAlt}

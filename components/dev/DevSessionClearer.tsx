@@ -12,7 +12,6 @@ export default function DevSessionClearer() {
         localStorage.removeItem('user');
         localStorage.removeItem('cart');
         sessionStorage.setItem(sessionKey, 'true');
-        console.log('🔄 Dev mode: Session cleared on fresh start');
       }
     }
   }, []);

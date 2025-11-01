@@ -25,7 +25,7 @@ export default function HorizontalCard({
   const isImageLeft = imagePosition === 'left';
 
   const imageSection = (
-    <div className="relative w-full md:w-1/2 h-[300px] md:h-[400px] flex-shrink-0">
+    <div className="relative w-full md:w-1/2 h-[400px] md:h-[700px] bg-gray-100 flex-shrink-0">
       <Image
         src={imageSrc}
         alt={imageAlt}
