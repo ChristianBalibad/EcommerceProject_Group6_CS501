@@ -17,6 +17,7 @@ interface FilterItem {
 
 interface FilterSidebarProps {
   initialFilter?: string;
+  initialDiscount?: string;
   initialArrivals?: string;
   initialGender?: string;
   initialCategory?: string;
@@ -24,7 +25,7 @@ interface FilterSidebarProps {
   newArrivalsCount?: number;
 }
 
-export default function FilterSidebar({ initialFilter, initialArrivals, initialGender, initialCategory, availableColors = [], newArrivalsCount = 0 }: FilterSidebarProps) {
+export default function FilterSidebar({ initialFilter, initialDiscount, initialArrivals, initialGender, initialCategory, availableColors = [], newArrivalsCount = 0 }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sectionId = (title: string) => title.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '-');
@@ -35,6 +36,9 @@ export default function FilterSidebar({ initialFilter, initialArrivals, initialG
   const initialSelectedFilters = new Set<string>();
   if (hasUpTo60OffFilter) {
     initialSelectedFilters.add('up-to-60-off');
+  }
+  if (initialDiscount) {
+    initialSelectedFilters.add(initialDiscount);
   }
   if (initialArrivals) {
     initialSelectedFilters.add(initialArrivals);
@@ -94,6 +98,7 @@ export default function FilterSidebar({ initialFilter, initialArrivals, initialG
       { label: '40-50% Off', value: 'discount-40-50' },
       { label: '30-40% Off', value: 'discount-30-40' },
       { label: '20-30% Off', value: 'discount-20-30' },
+      { label: '10-20% Off', value: 'discount-10-20' },
     ],
     defaultOpen: hasUpTo60OffFilter,
   };
@@ -244,6 +249,15 @@ export default function FilterSidebar({ initialFilter, initialArrivals, initialG
                               setSelectedFilters(newSet);
                               
                               const params = new URLSearchParams(searchParams.toString());
+                              
+                              const discountValues = ['up-to-60-off', 'discount-50-plus', 'discount-40-50', 'discount-30-40', 'discount-20-30', 'discount-10-20'];
+                              if (discountValues.includes(item.value)) {
+                                if (e.target.checked) {
+                                  params.set('discount', item.value);
+                                } else {
+                                  params.delete('discount');
+                                }
+                              }
                               
                               if (item.value === 'new') {
                                 if (e.target.checked) {

@@ -47,6 +47,7 @@ export default function AdminPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData, string>>>({});
 
   useEffect(() => {
+    document.title = 'Admin Dashboard | Undefined';
     setIsMounted(true);
   }, []);
 
@@ -550,11 +551,24 @@ export default function AdminPage() {
                   />
                 </div>
                 {errors.originalPrice && <p className="text-red-500 text-xs mt-1">{errors.originalPrice}</p>}
-                {!errors.originalPrice && formData.originalPrice && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    For discounts: Original price should be higher than the current price
-                  </p>
-                )}
+                {!errors.originalPrice && formData.originalPrice && formData.price && !errors.price && (() => {
+                  const priceNum = Number(formData.price);
+                  const origPriceNum = Number(formData.originalPrice);
+                  
+                  if (origPriceNum > priceNum) {
+                    const discountPercent = Math.round(((origPriceNum - priceNum) / origPriceNum) * 100);
+                    return (
+                      <p className="text-xs text-green-600 font-semibold mt-1">
+                        {discountPercent}% OFF
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="text-xs text-gray-500 mt-1">
+                      For discounts: Original price should be higher than the current price
+                    </p>
+                  );
+                })()}
               </div>
             </div>
 

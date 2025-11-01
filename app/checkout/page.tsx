@@ -46,6 +46,7 @@ export default function CheckoutPage() {
   const [orderSuccess, setOrderSuccess] = useState(false);
 
   useEffect(() => {
+    document.title = 'Checkout | Undefined';
     startTransition(() => {
       setIsMounted(true);
     });

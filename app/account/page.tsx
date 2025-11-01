@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,6 +46,10 @@ export default function AccountPage() {
   const [loginErrors, setLoginErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
   const [signupErrors, setSignupErrors] = useState<Partial<Record<keyof SignupFormData, string>>>({});
   const [loginError, setLoginError] = useState<string>('');
+
+  useEffect(() => {
+    document.title = 'My Account | Undefined';
+  }, []);
 
   const handleLoginInputChange = (field: keyof LoginFormData, value: string | boolean) => {
     setLoginData((prev) => ({ ...prev, [field]: value }));

@@ -53,6 +53,12 @@ export default function ProductDetailPage() {
   const imageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (product && typeof document !== 'undefined') {
+      document.title = `${product.name} | Undefined`;
+    }
+  }, [product]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [productResponse, allProductsResponse] = await Promise.all([

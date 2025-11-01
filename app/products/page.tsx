@@ -28,6 +28,7 @@ function ProductsContent() {
   const genderFilter = searchParams.get('gender');
   const categoryFilter = searchParams.get('category');
   const colorFilter = searchParams.get('color');
+  const discountFilter = searchParams.get('discount');
   const [products, setProducts] = useState<Product[]>([]);
   const [availableColors, setAvailableColors] = useState<string[]>([]);
   const [newArrivalsCount, setNewArrivalsCount] = useState(0);
@@ -69,6 +70,32 @@ function ProductsContent() {
           });
         }
         
+        if (discountFilter) {
+          finalProducts = finalProducts.filter((product: Product) => {
+            if (!product.originalPrice || product.originalPrice <= product.price) {
+              return false;
+            }
+            
+            const discountPercent = ((product.originalPrice - product.price) / product.originalPrice) * 100;
+            
+            if (discountFilter === 'up-to-60-off') {
+              return discountPercent > 0 && discountPercent <= 60;
+            } else if (discountFilter === 'discount-50-plus') {
+              return discountPercent >= 50;
+            } else if (discountFilter === 'discount-40-50') {
+              return discountPercent >= 40 && discountPercent < 50;
+            } else if (discountFilter === 'discount-30-40') {
+              return discountPercent >= 30 && discountPercent < 40;
+            } else if (discountFilter === 'discount-20-30') {
+              return discountPercent >= 20 && discountPercent < 30;
+            } else if (discountFilter === 'discount-10-20') {
+              return discountPercent >= 10 && discountPercent < 20;
+            }
+            
+            return false;
+          });
+        }
+        
         setProducts(finalProducts);
         
         const colorsSet = new Set<string>();
@@ -104,12 +131,13 @@ function ProductsContent() {
     };
 
     fetchProducts();
-  }, [categoryFilter, genderFilter, colorFilter, arrivalsFilter]);
+  }, [categoryFilter, genderFilter, colorFilter, arrivalsFilter, discountFilter]);
 
   return (
     <div className="flex gap-6">
       <FilterSidebar 
         initialFilter={offersFilter || undefined}
+        initialDiscount={discountFilter || undefined}
         initialArrivals={arrivalsFilter || undefined}
         initialGender={genderFilter || undefined}
         initialCategory={categoryFilter || undefined}
@@ -149,6 +177,7 @@ function ProductsContent() {
                 category={product.category}
                 productName={product.name}
                 price={`₱${product.price}`}
+                originalPrice={product.originalPrice ? `₱${product.originalPrice}` : undefined}
                 href={`/products/${product.slug}`}
               />
             );
@@ -161,6 +190,12 @@ function ProductsContent() {
 }
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    document.title = 'Shop All Products | Undefined';
+  }, [searchParams]);
+
   return (
     <main className="min-h-screen bg-white py-8">
       <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1520px' }}>

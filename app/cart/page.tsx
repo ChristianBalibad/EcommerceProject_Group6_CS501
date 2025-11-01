@@ -13,6 +13,10 @@ export default function CartPage() {
   const { items: cartItems, updateQuantity, removeFromCart } = useCart();
 
   useEffect(() => {
+    document.title = 'Shopping Cart | Undefined';
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated) {
       router.push('/account?redirect=/cart');
     }

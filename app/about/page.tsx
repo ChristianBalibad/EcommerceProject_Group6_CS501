@@ -1,8 +1,12 @@
 'use client';
 
 import Image from 'next/image';
+import { useEffect } from 'react';
 
 export default function AboutPage() {
+  useEffect(() => {
+    document.title = 'About Us | Undefined';
+  }, []);
   return (
     <main className="min-h-screen bg-white">
       <section className="w-full py-12 md:py-16 lg:py-20">
@@ -54,7 +58,7 @@ export default function AboutPage() {
                   Our Mission
                 </h2>
                 <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-                  We believe that everyone deserves to look and feel their best. That's why we handpick every item in our collection, ensuring quality craftsmanship, contemporary designs, and affordable prices. Whether you're looking for casual wear, athletic gear, or something special, we've got you covered.
+                  We believe that everyone deserves to look and feel their best. That&apos;s why we handpick every item in our collection, ensuring quality craftsmanship, contemporary designs, and affordable prices. Whether you&apos;re looking for casual wear, athletic gear, or something special, we&apos;ve got you covered.
                 </p>
               </div>
             </div>
@@ -110,14 +114,14 @@ export default function AboutPage() {
                 Our Commitment
               </h2>
               <p className="text-base md:text-lg text-gray-700 leading-relaxed text-center max-w-3xl mx-auto">
-                We are committed to providing exceptional customer service, fast shipping, and easy returns. Your satisfaction is our top priority, and we're always here to help you find exactly what you're looking for.
+                We are committed to providing exceptional customer service, fast shipping, and easy returns. Your satisfaction is our top priority, and we&apos;re always here to help you find exactly what you&apos;re looking for.
               </p>
             </div>
           </div>
 
           <div className="text-center">
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-              Thank you for choosing us for your fashion needs. We're excited to be part of your style journey.
+              Thank you for choosing us for your fashion needs. We&apos;re excited to be part of your style journey.
             </p>
           </div>
         </div>
