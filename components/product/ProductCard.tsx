@@ -30,7 +30,7 @@ export default function ProductCard({
       className="group bg-white rounded-lg overflow-hidden flex flex-col transition-shadow duration-300 ease-in-out hover:shadow-lg cursor-pointer"
       style={{ 
         width: '368px', 
-        height: '540px',
+        height: '680px',
         pointerEvents: isDragging ? 'none' : 'auto',
       }}
       draggable="false"
@@ -41,19 +41,20 @@ export default function ProductCard({
         }
       }}
     >
-      <div className="relative w-full bg-gray-100 flex-shrink-0" style={{ height: '324px' }}>
+      <div className="relative w-full bg-gray-100 flex-shrink-0" style={{ height: '460px' }}>
         <Image
           src={imageSrc}
           alt={imageAlt}
           fill
-          className="object-cover"
+          className="object-cover pointer-events-none"
           unoptimized
+          draggable={false}
         />
       </div>
 
       <div className="flex flex-col flex-1 p-4">
         <div className="mb-2">
-          <span className="inline-block bg-white text-black italic px-3 py-1 rounded-full" style={{ fontSize: '12px', fontWeight: 900, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
+          <span className="inline-block bg-white text-black italic px-3 py-1 rounded-full uppercase" style={{ fontSize: '12px', fontWeight: 900, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
             {category}
           </span>
         </div>

@@ -28,7 +28,7 @@ export default function Hero() {
           <div className="relative w-full h-[480px] md:h-[550px] lg:h-[580px]">
             <div className="absolute top-0 left-3 w-60 h-80 rounded-t-[10%] rounded-b-[10%] overflow-hidden z-10 shadow-lg">
               <Image
-                src="/images/herosection/hero-2.png"
+                src="/images/herosection/hero-2.avif"
                 alt="Female model with coffee"
                 fill
                 className="object-cover grayscale"
@@ -39,7 +39,7 @@ export default function Hero() {
             
             <div className="absolute left-70 right-1 top-30 w-74 h-[380px] rounded-t-[20%] rounded-b-[20%] overflow-hidden z-20 shadow-lg">
               <Image
-                src="/images/herosection/hero-1.png"
+                src="/images/herosection/hero-3.avif"
                 alt="Male model in white button-up shirt"
                 fill
                 className="object-cover grayscale"
@@ -47,9 +47,9 @@ export default function Hero() {
               />
             </div>
             
-            <div className="absolute top-85 bottom-0 left-3 w-60 h-90 rounded-b-[20%] overflow-hidden z-30 shadow-lg">
+            <div className="absolute top-85 bottom-0 left-3 w-60 h-90 rounded-b-[10%] rounded-t-[10%] overflow-hidden z-30 shadow-lg">
               <Image
-                src="/images/herosection/hero-3.png"
+                src="/images/herosection/hero-1.avif"
                 alt="Male model in leather jacket"
                 fill
                 className="object-cover grayscale"

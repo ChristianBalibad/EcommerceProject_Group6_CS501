@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,6 +46,10 @@ export default function AccountPage() {
   const [loginErrors, setLoginErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
   const [signupErrors, setSignupErrors] = useState<Partial<Record<keyof SignupFormData, string>>>({});
   const [loginError, setLoginError] = useState<string>('');
+
+  useEffect(() => {
+    document.title = 'My Account | Undefined';
+  }, []);
 
   const handleLoginInputChange = (field: keyof LoginFormData, value: string | boolean) => {
     setLoginData((prev) => ({ ...prev, [field]: value }));
@@ -108,14 +112,22 @@ export default function AccountPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateLoginForm()) {
-      const success = login(loginData.username, loginData.password);
+      const success = await login(loginData.username, loginData.password);
       if (success) {
         setIsRedirecting(true);
         const isAdmin = loginData.username === 'admin';
-        router.push(isAdmin ? '/admin' : '/');
+        const redirectUrl = searchParams.get('redirect');
+        
+        if (isAdmin) {
+          router.push('/admin');
+        } else if (redirectUrl) {
+          router.push(redirectUrl);
+        } else {
+          router.push('/');
+        }
       } else {
         setLoginError('Invalid username or password');
       }

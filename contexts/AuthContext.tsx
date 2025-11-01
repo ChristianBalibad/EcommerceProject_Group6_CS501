@@ -1,15 +1,17 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface User {
+  id: number;
   username: string;
+  email: string;
   role: 'admin' | 'customer';
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -17,35 +19,40 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const defaultUsers = [
-  { username: 'admin', password: 'admin', role: 'admin' as const },
-  { username: 'customer', password: 'customer', role: 'customer' as const },
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      return storedUser ? JSON.parse(storedUser) : null;
     }
-    setIsLoading(false);
-  }, []);
+    return null;
+  });
+  const isLoading = false;
 
-  const login = (username: string, password: string): boolean => {
-    const foundUser = defaultUsers.find(
-      (u) => u.username === username && u.password === password
-    );
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (foundUser) {
-      const userData = { username: foundUser.username, role: foundUser.role };
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      const userData = data.user;
+      
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
@@ -53,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
     localStorage.removeItem('cart');
     window.dispatchEvent(new Event('logout'));
+    window.location.href = '/';
   };
 
   return (

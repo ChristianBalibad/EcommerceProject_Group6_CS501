@@ -17,8 +17,8 @@ export default function FeatureCard({
   href = '#' 
 }: FeatureCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden transition-shadow hover:shadow-lg flex flex-col" style={{ width: '245px', height: '373px' }}>
-      <div className="relative w-full h-[230px] bg-gray-50 flex-shrink-0">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden transition-shadow hover:shadow-lg flex flex-col" style={{ width: '235px', height: '450px' }}>
+      <div className="relative w-full h-[300px] bg-gray-50 flex-shrink-0">
         <Image
           src={imageSrc}
           alt={imageAlt}

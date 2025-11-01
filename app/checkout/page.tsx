@@ -1,56 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, startTransition } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface CheckoutProduct {
-  id: number;
-  imageSrc: string;
-  imageAlt: string;
-  productName: string;
-  category: string;
-  price: string;
-  originalPrice?: string;
-  size?: string;
-  quantity: number;
-}
-
-const checkoutItems: CheckoutProduct[] = [
-  {
-    id: 1,
-    imageSrc: '/images/products/versatile-long-sleeve.jpg',
-    imageAlt: 'Versatile Long sleeve',
-    category: 'TOPS & TSHIRTS',
-    productName: 'Versatile Long sleeve',
-    price: '₱299',
-    size: 'M',
-    quantity: 2,
-  },
-  {
-    id: 2,
-    imageSrc: '/images/products/sneakers-grey-cream.jpg',
-    imageAlt: 'Grey sneakers with cream sole',
-    category: 'SHOES',
-    productName: 'Classic Grey Sneakers',
-    price: '₱899',
-    originalPrice: '₱1,199',
-    size: '42',
-    quantity: 1,
-  },
-  {
-    id: 3,
-    imageSrc: '/images/products/aloha-spirit-polo.jpg',
-    imageAlt: 'Aloha Spirit Polo',
-    category: 'TOPS & TSHIRTS',
-    productName: 'Aloha Spirit Polo',
-    price: '₱599',
-    size: 'L',
-    quantity: 1,
-  },
-];
+import { useCart } from '@/contexts/CartContext';
 
 interface FormData {
   firstName: string;
@@ -66,8 +21,13 @@ interface FormData {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const searchParams = useSearchParams();
+  const { user, isAuthenticated } = useAuth();
+  const { items: cartItems, clearCart } = useCart();
+  const [isMounted, setIsMounted] = useState(false);
+  
+  const fromProduct = searchParams.get('from') === 'product';
+  const productSlug = searchParams.get('slug');
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -82,12 +42,21 @@ export default function CheckoutPage() {
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/account');
+    document.title = 'Checkout | Undefined';
+    startTransition(() => {
+      setIsMounted(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && !isAuthenticated) {
+      window.location.href = '/account';
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isMounted]);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -124,29 +93,34 @@ export default function CheckoutPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log('Form submitted:', formData);
+    if (!validateForm() || !user) {
+      return;
     }
-  };
 
-  const parsePrice = (priceString: string): number => {
-    return parseFloat(priceString.replace('₱', '').replace(',', ''));
+    setIsSubmitting(true);
+
+    setTimeout(() => {
+      clearCart();
+      setIsSubmitting(false);
+      setOrderSuccess(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 1000);
   };
 
   const calculateSubtotal = (): number => {
-    return checkoutItems.reduce(
-      (total, item) => total + parsePrice(item.price) * item.quantity,
+    return cartItems.reduce(
+      (total, item) => total + item.price * item.quantity,
       0
     );
   };
 
   const calculateDiscount = (): number => {
-    return checkoutItems.reduce((total, item) => {
-      if (item.originalPrice) {
-        const original = parsePrice(item.originalPrice);
-        const current = parsePrice(item.price);
+    return cartItems.reduce((total, item) => {
+      if (item.price) {
+        const original = item.price;
+        const current = item.price;
         return total + (original - current) * item.quantity;
       }
       return total;
@@ -162,12 +136,61 @@ export default function CheckoutPage() {
   const shipping = getShippingCost();
   const total = subtotal - discount + shipping;
 
-  if (!isAuthenticated) {
+  if (!isMounted || !isAuthenticated) {
     return (
       <main className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900"></div>
-          <p className="mt-6 text-gray-600 text-lg">Redirecting...</p>
+          <p className="mt-6 text-gray-600 text-lg">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (orderSuccess) {
+    return (
+      <main className="min-h-screen bg-white py-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1520px' }}>
+          <div className="max-w-2xl mx-auto text-center py-16">
+            <div className="mb-8">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-green-600"
+                >
+                  <path
+                    d="M20 6L9 17L4 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <h1 className="text-4xl font-bold text-black mb-4">Order Placed Successfully!</h1>
+              <p className="text-lg text-gray-600 mb-8">
+                Thank you for your order. Exempted nani miss please huhu... 😭.
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Link
+                  href="/products"
+                  className="inline-block bg-black text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold"
+                >
+                  Continue Shopping
+                </Link>
+                <Link
+                  href="/"
+                  className="inline-block bg-white text-black px-8 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Back to Home
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -178,7 +201,7 @@ export default function CheckoutPage() {
       <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1520px' }}>
         <div className="mb-8">
           <Link
-            href="/cart"
+            href={fromProduct && productSlug ? `/products/${productSlug}` : '/cart'}
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
           >
             <svg
@@ -194,7 +217,7 @@ export default function CheckoutPage() {
             >
               <path d="M19 12H5M12 19L5 12L12 5" />
             </svg>
-            Back to Cart
+            {fromProduct ? 'Back to Product' : 'Back to Cart'}
           </Link>
           <h1 className="text-3xl font-bold text-black mb-2">Checkout</h1>
           <p className="text-gray-600">Complete your order below</p>
@@ -449,14 +472,14 @@ export default function CheckoutPage() {
                 <h2 className="text-xl font-bold text-black mb-6">Order Summary</h2>
 
                 <div className="space-y-4 mb-6 max-h-96 overflow-y-auto scrollbar-hide">
-                  {checkoutItems.map((item) => {
-                    const itemTotal = parsePrice(item.price) * item.quantity;
+                  {cartItems.map((item) => {
+                    const itemTotal = item.price * item.quantity;
                     return (
                       <div key={item.id} className="flex gap-3 pb-4 border-b border-gray-200 last:border-0">
-                        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        <div className="relative w-16 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                           <Image
-                            src={item.imageSrc}
-                            alt={item.imageAlt}
+                            src={item.image}
+                            alt={item.name}
                             fill
                             className="object-cover"
                             unoptimized
@@ -464,7 +487,7 @@ export default function CheckoutPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-black mb-1 truncate">
-                            {item.productName}
+                            {item.name}
                           </h3>
                           <p className="text-xs text-gray-500 mb-1">
                             {item.size && `Size: ${item.size} • `}Qty: {item.quantity}
@@ -514,9 +537,10 @@ export default function CheckoutPage() {
 
                 <button
                   type="submit"
-                  className="w-full bg-black text-white text-center py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors font-semibold mb-4"
+                  disabled={isSubmitting || cartItems.length === 0}
+                  className="w-full bg-black text-white text-center py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors font-semibold mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Place Order
+                  {isSubmitting ? 'Processing...' : 'Place Order'}
                 </button>
 
                 <p className="text-xs text-gray-500 text-center">

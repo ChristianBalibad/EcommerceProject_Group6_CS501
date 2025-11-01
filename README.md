@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# E-commerce Project - Group 6 CS501
 
-## Getting Started
+A modern e-commerce web application built with Next.js, TypeScript, Tailwind CSS, and SQLite.
 
-First, run the development server:
+## Tech Stack
 
+- **Frontend**: Next.js 16, React 19, TypeScript
+- **Styling**: Tailwind CSS
+- **Database**: SQLite (via Prisma ORM)
+- **Authentication**: Custom JWT-less session (localStorage)
+- **State Management**: React Context API
+
+## Features
+
+- User authentication (Admin & Customer roles)
+- Product catalog with filtering
+- Shopping cart functionality
+- Checkout process
+- Admin panel for product management
+- Responsive design
+
+## Setup Instructions
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn package manager
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd EcommerceProject_Group6_CS501/my-app
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up the database**
+   
+   The project uses SQLite, which requires no additional installation. Run the following commands:
+
+   ```bash
+   # Create database and tables
+   npx prisma migrate dev --name init
+
+   # Seed demo data (users & products)
+   npx prisma db seed
+
+   # If it doesn't work (wala kay makita na successfully seeded), run:
+   npx tsx prisma/seed.js
+   ```
+
+   This will create:
+   - SQLite database file (`dev.db`)
+   - 2 demo users
+   - 6 demo products
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open the application**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Demo Accounts
+
+### Admin Account
+- **Username**: `admin`
+- **Password**: `admin`
+- **Access**: Full admin panel for product management
+
+### Customer Account
+- **Username**: `customer`
+- **Password**: `customer`
+- **Access**: Shopping features (browse, cart, checkout)
+
+## Development
+
+### Adding New Products
+
+1. Login as admin (`admin` / `admin`)
+2. Navigate to Admin Dashboard
+3. Fill in product details
+4. Submit to add to database
+
+### Viewing Database
+
+Use Prisma Studio to view/edit database:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx prisma studio
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This opens a web interface at [http://localhost:5555](http://localhost:5555)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Troubleshooting
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Database Issues
 
-## Learn More
+If you encounter database errors:
+```bash
+# Reset database
+npx prisma migrate reset
 
-To learn more about Next.js, take a look at the following resources:
+# This will:
+# 1. Drop database
+# 2. Recreate database
+# 3. Run migrations
+# 4. Run seed data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# If you can't see any data, run:
+npx tsx prisma/seed.ts
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Port Already in Use
 
-## Deploy on Vercel
+If port 3000 is already in use:
+```bash
+# Run on different port
+npm run dev -- -p 3001
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Group Members
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Group 6 - CS501
+- Balibad, Christian (Developer)
+- Baylon, Ivan Keith (Designer)
+- Cabaltera, Kathrina (Quality Assurance)
+- Nellas, Zessuah Ray (Project Planner)
+
+---
+
+For questions or issues, please dm/pm the development team.

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, startTransition } from 'react';
 
 interface CartItem {
   id: number;
@@ -26,14 +26,26 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [triggerAnimation, setTriggerAnimation] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedCart = localStorage.getItem('cart');
-      return storedCart ? JSON.parse(storedCart) : [];
+      startTransition(() => {
+        if (storedCart) {
+          try {
+            const parsedCart = JSON.parse(storedCart);
+            setItems(parsedCart);
+          } catch (error) {
+            console.error('Error loading cart from localStorage:', error);
+          }
+        }
+        setIsHydrated(true);
+      });
     }
-    return [];
-  });
-  const [triggerAnimation, setTriggerAnimation] = useState(false);
+  }, []);
 
   useEffect(() => {
     const handleLogout = () => {
@@ -45,12 +57,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (items.length > 0) {
-      localStorage.setItem('cart', JSON.stringify(items));
-    } else {
-      localStorage.removeItem('cart');
+    if (isHydrated) {
+      if (items.length > 0) {
+        localStorage.setItem('cart', JSON.stringify(items));
+      } else {
+        localStorage.removeItem('cart');
+      }
     }
-  }, [items]);
+  }, [items, isHydrated]);
 
   const addToCart = (item: CartItem) => {
     setItems((prevItems) => {

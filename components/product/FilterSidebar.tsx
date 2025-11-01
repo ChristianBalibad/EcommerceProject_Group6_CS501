@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface FilterSection {
   title: string;
@@ -16,11 +17,17 @@ interface FilterItem {
 
 interface FilterSidebarProps {
   initialFilter?: string;
+  initialDiscount?: string;
+  initialArrivals?: string;
   initialGender?: string;
   initialCategory?: string;
+  availableColors?: string[];
+  newArrivalsCount?: number;
 }
 
-export default function FilterSidebar({ initialFilter, initialGender, initialCategory }: FilterSidebarProps) {
+export default function FilterSidebar({ initialFilter, initialDiscount, initialArrivals, initialGender, initialCategory, availableColors = [], newArrivalsCount = 0 }: FilterSidebarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const sectionId = (title: string) => title.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '-');
   
   const hasUpTo60OffFilter = initialFilter === 'up-to-60-off';
@@ -30,22 +37,28 @@ export default function FilterSidebar({ initialFilter, initialGender, initialCat
   if (hasUpTo60OffFilter) {
     initialSelectedFilters.add('up-to-60-off');
   }
+  if (initialDiscount) {
+    initialSelectedFilters.add(initialDiscount);
+  }
+  if (initialArrivals) {
+    initialSelectedFilters.add(initialArrivals);
+  }
   if (initialGender) {
     initialSelectedFilters.add(initialGender);
   }
-  if (initialCategory === 'shoes' || initialCategory === 'sneakers') {
-    initialSelectedFilters.add('shoes');
-  } else if (initialCategory) {
-    initialSelectedFilters.add(initialCategory);
+  const colorParam = searchParams.get('color');
+  if (colorParam) {
+    colorParam.split(',').forEach(color => {
+      if (color.trim()) {
+        initialSelectedFilters.add(color.trim());
+      }
+    });
   }
   
   const initialOpenSectionsSet = hasUpTo60OffFilter 
-    ? new Set([saleDiscountId, 'new-arrivals'])
-    : new Set(['new-arrivals', saleDiscountId]);
+    ? new Set([saleDiscountId, 'new-arrivals', 'gender', 'colour'])
+    : new Set(['new-arrivals', saleDiscountId, 'gender', 'colour']);
   
-  if (initialGender) {
-    initialOpenSectionsSet.add('gender');
-  }
   if (initialCategory) {
     initialOpenSectionsSet.add('new-arrivals');
   }
@@ -85,8 +98,17 @@ export default function FilterSidebar({ initialFilter, initialGender, initialCat
       { label: '40-50% Off', value: 'discount-40-50' },
       { label: '30-40% Off', value: 'discount-30-40' },
       { label: '20-30% Off', value: 'discount-20-30' },
+      { label: '10-20% Off', value: 'discount-10-20' },
     ],
     defaultOpen: hasUpTo60OffFilter,
+  };
+
+  const newArrivalsFilterSection: FilterSection = {
+    title: 'New Arrivals',
+    items: [
+      { label: `Last 30 Days (${newArrivalsCount})`, value: 'new' },
+    ],
+    defaultOpen: !!initialArrivals,
   };
 
   const genderSection: FilterSection = {
@@ -97,35 +119,32 @@ export default function FilterSidebar({ initialFilter, initialGender, initialCat
       { label: 'Kids', value: 'kids' },
       { label: 'Unisex', value: 'unisex' },
     ],
-    defaultOpen: !!initialGender,
+    defaultOpen: true,
   };
 
   const colourSection: FilterSection = {
     title: 'Colour',
-    items: [
-      { label: 'Black', value: 'black' },
-      { label: 'White', value: 'white' },
-      { label: 'Red', value: 'red' },
-      { label: 'Blue', value: 'blue' },
-      { label: 'Green', value: 'green' },
-      { label: 'Yellow', value: 'yellow' },
-      { label: 'Purple', value: 'purple' },
-      { label: 'Pink', value: 'pink' },
-    ],
-    defaultOpen: false,
+    items: availableColors.map(color => ({
+      label: color.charAt(0).toUpperCase() + color.slice(1),
+      value: color.toLowerCase()
+    })),
+    defaultOpen: true,
   };
 
   const filteredNewArrivalItems = getFilteredNewArrivalItems();
-  const sectionTitle = (initialGender || initialCategory || hasUpTo60OffFilter) ? 'Categories' : 'New Arrivals';
   const newArrivalsSection: FilterSection = {
-    title: sectionTitle,
+    title: 'Categories',
     items: filteredNewArrivalItems,
     defaultOpen: true,
   };
 
+  const hasNewArrivalsFilter = initialArrivals === 'new';
+  
   const filterSections: FilterSection[] = hasUpTo60OffFilter
-    ? [saleDiscountsSection, newArrivalsSection, genderSection, colourSection]
-    : [newArrivalsSection, saleDiscountsSection, genderSection, colourSection];
+    ? [saleDiscountsSection, newArrivalsFilterSection, newArrivalsSection, genderSection, colourSection]
+    : hasNewArrivalsFilter
+    ? [newArrivalsFilterSection, newArrivalsSection, saleDiscountsSection, genderSection, colourSection]
+    : [newArrivalsSection, newArrivalsFilterSection, saleDiscountsSection, genderSection, colourSection];
 
   const toggleSection = (title: string) => {
     setOpenSections((prev) => {
@@ -140,12 +159,12 @@ export default function FilterSidebar({ initialFilter, initialGender, initialCat
   };
 
   return (
-    <div className="bg-white border-r border-gray-200" style={{ width: '320px' }}>
+    <div className="bg-white border-r border-gray-200 sticky top-0 self-start overflow-y-auto scrollbar-hide" style={{ width: '320px', maxHeight: '100vh' }}>
       <div className="p-4">
         {filterSections.map((section, index) => {
           const id = sectionId(section.title);
           const isOpen = openSections.has(id);
-          const showCount = section.title === 'New Arrivals' && !hasUpTo60OffFilter && !initialGender && !initialCategory;
+          const showCount = false;
 
           const isCategoriesSection = section.title === 'Categories' || section.title === 'New Arrivals';
           const isAlwaysOpen = isCategoriesSection;
@@ -184,7 +203,7 @@ export default function FilterSidebar({ initialFilter, initialGender, initialCat
                   isAlwaysOpen || isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                <div className="flex flex-col gap-2">
+                <div className={section.title === 'Colour' ? 'grid grid-cols-2 gap-2' : 'flex flex-col gap-2'}>
                   {section.items.map((item) => {
                     const isNewArrivals = section.title === 'New Arrivals' || section.title === 'Categories';
                     const isChecked = isNewArrivals 
@@ -201,9 +220,25 @@ export default function FilterSidebar({ initialFilter, initialGender, initialCat
                           name={isNewArrivals ? 'new-arrivals' : id}
                           value={item.value}
                           checked={isChecked}
+                          onClick={(e) => {
+                            if (isNewArrivals) {
+                              if (selectedNewArrival === item.value) {
+                                e.preventDefault();
+                                setSelectedNewArrival('');
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.delete('category');
+                                router.push(`/products?${params.toString()}`, { scroll: false });
+                              }
+                            }
+                          }}
                           onChange={(e) => {
                             if (isNewArrivals) {
-                              setSelectedNewArrival(e.target.value);
+                              if (selectedNewArrival !== e.target.value) {
+                                setSelectedNewArrival(e.target.value);
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set('category', e.target.value);
+                                router.push(`/products?${params.toString()}`, { scroll: false });
+                              }
                             } else {
                               const newSet = new Set(selectedFilters);
                               if (e.target.checked) {
@@ -212,6 +247,58 @@ export default function FilterSidebar({ initialFilter, initialGender, initialCat
                                 newSet.delete(item.value);
                               }
                               setSelectedFilters(newSet);
+                              
+                              const params = new URLSearchParams(searchParams.toString());
+                              
+                              const discountValues = ['up-to-60-off', 'discount-50-plus', 'discount-40-50', 'discount-30-40', 'discount-20-30', 'discount-10-20'];
+                              if (discountValues.includes(item.value)) {
+                                if (e.target.checked) {
+                                  params.set('discount', item.value);
+                                } else {
+                                  params.delete('discount');
+                                }
+                              }
+                              
+                              if (item.value === 'new') {
+                                if (e.target.checked) {
+                                  params.set('arrivals', item.value);
+                                } else {
+                                  params.delete('arrivals');
+                                }
+                              }
+                              
+                              const genderValues = ['men', 'women', 'kids', 'unisex'];
+                              if (genderValues.includes(item.value)) {
+                                if (e.target.checked) {
+                                  params.set('gender', item.value);
+                                } else {
+                                  params.delete('gender');
+                                }
+                              }
+                              
+                              const colorItem = availableColors.map(c => c.toLowerCase()).includes(item.value);
+                              if (colorItem) {
+                                const currentColors = params.get('color')?.split(',').filter(c => c) || [];
+                                
+                                if (e.target.checked) {
+                                  if (!currentColors.includes(item.value)) {
+                                    currentColors.push(item.value);
+                                  }
+                                } else {
+                                  const index = currentColors.indexOf(item.value);
+                                  if (index > -1) {
+                                    currentColors.splice(index, 1);
+                                  }
+                                }
+                                
+                                if (currentColors.length > 0) {
+                                  params.set('color', currentColors.join(','));
+                                } else {
+                                  params.delete('color');
+                                }
+                              }
+                              
+                              router.push(`/products?${params.toString()}`, { scroll: false });
                             }
                           }}
                           className={`${isNewArrivals ? 'w-4 h-4' : 'w-4 h-4'} border-gray-300 ${isNewArrivals ? '' : 'rounded'} text-black focus:ring-black cursor-pointer`}
