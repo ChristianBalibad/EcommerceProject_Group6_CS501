@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import YouMightAlsoLike from '@/components/product/YouMightAlsoLike';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
+import FlyingImage from '@/components/ui/FlyingImage';
 
 const productsData = [
   {
@@ -124,11 +128,21 @@ const productsData = [
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params?.slug as string;
+  const { isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
+  const { showToast } = useToast();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [flyingImage, setFlyingImage] = useState<{
+    src: string;
+    startPos: { x: number; y: number };
+    endPos: { x: number; y: number };
+  } | null>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
 
   const product = productsData.find((p) => p.slug === slug);
 
@@ -148,16 +162,76 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      router.push('/account');
+      return;
+    }
     if (!selectedSize || !selectedColor) {
       alert('Please select a size and color');
       return;
     }
-    alert(`Added ${quantity} ${product.name} (${selectedSize}, ${selectedColor}) to cart`);
+    
+    if (imageRef.current) {
+      const imageRect = imageRef.current.getBoundingClientRect();
+      const cartIcon = document.querySelector('[aria-label="Shopping Cart"]');
+      
+      if (cartIcon) {
+        const cartRect = cartIcon.getBoundingClientRect();
+        
+        setFlyingImage({
+          src: product.images[selectedImage],
+          startPos: {
+            x: imageRect.left + imageRect.width / 2 - 64,
+            y: imageRect.top + imageRect.height / 2 - 64,
+          },
+          endPos: {
+            x: cartRect.left + cartRect.width / 2 - 64,
+            y: cartRect.top + cartRect.height / 2 - 64,
+          },
+        });
+      }
+    }
+    
+    const priceValue = parseFloat(product.price.replace('₱', '').replace(',', ''));
+    addToCart({
+      id: product.slug.charCodeAt(0),
+      name: product.name,
+      price: priceValue,
+      size: selectedSize,
+      color: selectedColor,
+      quantity: quantity,
+      image: product.images[0],
+    });
+    
+    setTimeout(() => {
+      showToast(`Added ${quantity} ${product.name} to cart!`);
+    }, 400);
+  };
+
+  const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      router.push('/account');
+      return;
+    }
+    if (!selectedSize || !selectedColor) {
+      alert('Please select a size and color');
+      return;
+    }
+    router.push('/checkout');
   };
 
   return (
-    <main className="min-h-screen bg-white py-8">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1520px' }}>
+    <>
+      {flyingImage && (
+        <FlyingImage
+          imageSrc={flyingImage.src}
+          startPosition={flyingImage.startPos}
+          endPosition={flyingImage.endPos}
+          onComplete={() => setFlyingImage(null)}
+        />
+      )}
+      <main className="min-h-screen bg-white py-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1520px' }}>
         <div className="mb-4">
           <Link href="/products" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
             ← Back to Products
@@ -166,7 +240,7 @@ export default function ProductDetailPage() {
 
         <div className="flex gap-12">
           <div className="flex-1">
-            <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden mb-4" style={{ height: '600px' }}>
+            <div ref={imageRef} className="relative w-full bg-gray-100 rounded-lg overflow-hidden mb-4" style={{ height: '600px' }}>
               <Image
                 src={product.images[selectedImage]}
                 alt={product.name}
@@ -326,12 +400,15 @@ export default function ProductDetailPage() {
             <div className="space-y-3">
               <button
                 onClick={handleAddToCart}
-                className="w-full py-3.5 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                className="w-full py-3.5 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 active:bg-gray-900 transition-all duration-200"
               >
-                Add to Cart
+                {isAuthenticated ? 'Add to Cart' : 'Login to Add to Cart'}
               </button>
-              <button className="w-full py-3.5 bg-white text-black border-2 border-gray-900 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
-                Buy Now
+              <button 
+                onClick={handleBuyNow}
+                className="w-full py-3.5 bg-white text-black border-2 border-gray-900 rounded-lg font-semibold hover:bg-gray-100 active:bg-gray-200 transition-all duration-200"
+              >
+                {isAuthenticated ? 'Buy Now' : 'Login to Buy Now'}
               </button>
             </div>
 
@@ -354,7 +431,8 @@ export default function ProductDetailPage() {
             imageSrc: p.images[0],
           }))}
         />
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   );
 }

@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CheckoutProduct {
   id: number;
@@ -64,6 +66,8 @@ interface FormData {
 }
 
 export default function CheckoutPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -78,6 +82,12 @@ export default function CheckoutPage() {
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/account');
+    }
+  }, [isAuthenticated, router]);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -151,6 +161,17 @@ export default function CheckoutPage() {
   const discount = calculateDiscount();
   const shipping = getShippingCost();
   const total = subtotal - discount + shipping;
+
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900"></div>
+          <p className="mt-6 text-gray-600 text-lg">Redirecting...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-white py-8">
