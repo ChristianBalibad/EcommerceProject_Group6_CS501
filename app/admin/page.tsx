@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -26,7 +25,6 @@ interface ProductFormData {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
   const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,8 +63,7 @@ export default function AdminPage() {
   }, [isAuthenticated, user, isMounted]);
 
   const handleLogout = () => {
-    router.push('/account');
-    setTimeout(() => logout(), 100);
+    logout();
   };
 
   const handleInputChange = (field: keyof ProductFormData, value: string) => {

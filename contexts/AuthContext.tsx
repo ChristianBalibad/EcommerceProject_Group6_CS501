@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
     localStorage.removeItem('cart');
     window.dispatchEvent(new Event('logout'));
+    window.location.href = '/';
   };
 
   return (
