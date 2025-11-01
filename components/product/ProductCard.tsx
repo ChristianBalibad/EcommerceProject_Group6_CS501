@@ -53,7 +53,7 @@ export default function ProductCard({
 
       <div className="flex flex-col flex-1 p-4">
         <div className="mb-2">
-          <span className="inline-block bg-white text-black italic px-3 py-1 rounded-full" style={{ fontSize: '12px', fontWeight: 900, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
+          <span className="inline-block bg-white text-black italic px-3 py-1 rounded-full uppercase" style={{ fontSize: '12px', fontWeight: 900, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
             {category}
           </span>
         </div>

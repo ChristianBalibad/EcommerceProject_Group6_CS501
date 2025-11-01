@@ -1,29 +1,44 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import HorizontalCard from '../card/HorizontalCard';
 
-const newArrivals = [
-  {
-    headline: "Undefined C1TY 'Brownstone'",
-    description: "Undefined C1TY is engineered to overcome anything the city throws your way. A mesh upper keeps the fit breathable, while the reinforced sides and toe box help protect your feet from the elements. This 'Brownstone' edition pulls colour inspiration from iconic architectural design—giving street style a whole new meaning.",
-    buttonText: 'Buy Now',
-    imageSrc: '/images/products/undefined-city-brownstone.jpg',
-    imageAlt: "Undefined C1TY 'Brownstone' shoe",
-    href: '/products/undefined-city-brownstone',
-    imagePosition: 'right' as const,
-  },
-  {
-    headline: 'Undefined Lunar Roam',
-    description: 'Punch up your lifestyle look with a dash of bouncy Lunar performance. Breezy, lightweight materials are paired with an ultra-plush midsole for laid-back comfort—wherever you wander.',
-    buttonText: 'Buy Now',
-    imageSrc: '/images/products/undefined-lunar-roam.jpg',
-    imageAlt: 'Undefined Lunar Roam shoe',
-    href: '/products/undefined-lunar-roam',
-    imagePosition: 'left' as const,
-  },
-];
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl: string;
+}
 
 export default function NewArrivals() {
+  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const fetchNewProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const data = await response.json();
+          const products = data.products || [];
+          
+          const sorted = [...products].sort((a, b) => {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+          
+          const shuffled = sorted.slice(2).sort(() => Math.random() - 0.5);
+          const selected = [...sorted.slice(0, 2), ...shuffled.slice(0, 1)].slice(0, 2);
+          
+          setNewArrivals(selected);
+        }
+      } catch (error) {
+        console.error('Error fetching new arrivals:', error);
+      }
+    };
+
+    fetchNewProducts();
+  }, []);
+
   return (
     <section className="w-full bg-white pt-8 md:pt-12 pb-16 md:pb-24">
       <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1152px' }}>
@@ -31,20 +46,46 @@ export default function NewArrivals() {
           New Arrivals
         </h2>
         
-        <div className="flex flex-col gap-8">
-          {newArrivals.map((product, index) => (
-            <HorizontalCard
-              key={index}
-              headline={product.headline}
-              description={product.description}
-              buttonText={product.buttonText}
-              imageSrc={product.imageSrc}
-              imageAlt={product.imageAlt}
-              imagePosition={product.imagePosition}
-              href={product.href}
-            />
-          ))}
-        </div>
+        {newArrivals.length > 0 ? (
+          <div className="flex flex-col gap-8">
+            {newArrivals.map((product, index) => {
+              let mainImage = '';
+              try {
+                const imagesData = (product as { images?: string | string[] }).images;
+                if (typeof imagesData === 'string') {
+                  const imagesArray = JSON.parse(imagesData || '[]');
+                  if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+                    const firstImage = imagesArray[0];
+                    mainImage = typeof firstImage === 'string' ? firstImage : (firstImage as { url?: string })?.url || '';
+                  }
+                } else if (Array.isArray(imagesData) && imagesData.length > 0) {
+                  mainImage = imagesData[0];
+                }
+              } catch (error) {
+                console.error('Error parsing images:', error);
+              }
+              
+              if (!mainImage) return null;
+              
+              return (
+                <HorizontalCard
+                  key={product.id}
+                  headline={product.name}
+                  description={product.description}
+                  buttonText="Buy Now"
+                  imageSrc={mainImage}
+                  imageAlt={product.name}
+                  imagePosition={index % 2 === 0 ? 'right' : 'left'}
+                  href={`/products/${product.slug}`}
+                />
+              );
+            }).filter(Boolean)}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-12">
+            Loading new arrivals...
+          </div>
+        )}
       </div>
     </section>
   );

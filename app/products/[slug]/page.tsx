@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,129 +10,36 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import FlyingImage from '@/components/ui/FlyingImage';
 
-const productsData = [
-  {
-    slug: 'versatile-long-sleeve',
-    name: 'Versatile Long sleeve',
-    category: 'TOPS & TSHIRTS',
-    price: '₱299',
-    originalPrice: null,
-    description: 'A comfortable and versatile long sleeve shirt perfect for everyday wear. Made with premium quality fabric that ensures durability and comfort throughout the day.',
-    images: [
-      '/images/products/versatile-long-sleeve.jpg',
-    ],
-    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-    colors: [
-      { name: 'Black', value: '#000000' },
-      { name: 'White', value: '#FFFFFF' },
-      { name: 'Navy', value: '#1E3A5F' },
-      { name: 'Gray', value: '#808080' },
-    ],
-    inStock: true,
-    stockCount: 15,
-  },
-  {
-    slug: 'aloha-spirit-polo',
-    name: 'Aloha Spirit Polo',
-    category: 'TOPS & TSHIRTS',
-    price: '₱599',
-    originalPrice: '₱799',
-    description: 'Embrace the island vibes with our Aloha Spirit Polo. This classic polo shirt combines comfort with style, featuring a relaxed fit and breathable fabric perfect for warm weather.',
-    images: [
-      '/images/products/aloha-spirit-polo.jpg',
-    ],
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: [
-      { name: 'Blue', value: '#1E90FF' },
-      { name: 'White', value: '#FFFFFF' },
-      { name: 'Navy', value: '#1E3A5F' },
-    ],
-    inStock: true,
-    stockCount: 8,
-  },
-  {
-    slug: 'lush-leaf-print',
-    name: 'Lush Leaf Print',
-    category: 'TOPS & TSHIRTS',
-    price: '₱500',
-    originalPrice: null,
-    description: 'Make a statement with our Lush Leaf Print shirt. This unique design features vibrant botanical patterns that add a fresh and modern touch to your wardrobe.',
-    images: [
-      '/images/products/lush-leaf-print.jpg',
-    ],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    colors: [
-      { name: 'Green', value: '#228B22' },
-      { name: 'White', value: '#FFFFFF' },
-    ],
-    inStock: true,
-    stockCount: 12,
-  },
-  {
-    slug: 'classic-grey-sneakers',
-    name: 'Classic Grey Sneakers',
-    category: 'SHOES',
-    price: '₱899',
-    originalPrice: null,
-    description: 'Timeless style meets comfort in our Classic Grey Sneakers. Built with premium materials and cushioned insoles for all-day comfort, these sneakers are perfect for any occasion.',
-    images: [
-      '/images/products/sneakers-grey-cream.jpg',
-    ],
-    sizes: ['38', '39', '40', '41', '42', '43', '44'],
-    colors: [
-      { name: 'Grey', value: '#808080' },
-      { name: 'Black', value: '#000000' },
-      { name: 'White', value: '#FFFFFF' },
-    ],
-    inStock: true,
-    stockCount: 20,
-  },
-  {
-    slug: 'urban-runner',
-    name: 'Urban Runner',
-    category: 'SHOES',
-    price: '₱999',
-    originalPrice: null,
-    description: 'Designed for the modern urban lifestyle, the Urban Runner combines sleek aesthetics with superior performance. Perfect for running or casual wear.',
-    images: [
-      '/images/products/sneakers-grey-white-blue.jpg',
-    ],
-    sizes: ['38', '39', '40', '41', '42', '43', '44', '45'],
-    colors: [
-      { name: 'Grey Blue', value: '#4682B4' },
-      { name: 'Black', value: '#000000' },
-    ],
-    inStock: true,
-    stockCount: 18,
-  },
-  {
-    slug: 'brown-two-piece-set',
-    name: 'Brown Two-Piece Set',
-    category: 'DRESS',
-    price: '₱1299',
-    originalPrice: '₱1599',
-    description: 'Elegant and sophisticated, this brown two-piece set offers a perfect blend of style and comfort. Ideal for various occasions, from casual outings to semi-formal events.',
-    images: [
-      '/images/products/women-outfit-brown.jpg',
-    ],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    colors: [
-      { name: 'Brown', value: '#8B4513' },
-      { name: 'Beige', value: '#F5F5DC' },
-      { name: 'Navy', value: '#1E3A5F' },
-    ],
-    inStock: true,
-    stockCount: 10,
-  },
-];
+interface ImageWithColors {
+  url: string;
+  colors: string[];
+}
+
+interface ProductData {
+  slug: string;
+  name: string;
+  category: string;
+  price: string;
+  originalPrice: string | null;
+  description: string;
+  images: string[];
+  imagesData: ImageWithColors[];
+  sizes: string[];
+  colors: Array<{ name: string; value: string }>;
+  inStock: boolean;
+  stockCount: number;
+}
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const slug = params?.slug as string;
+  const slug = typeof params?.slug === 'string' ? params.slug : Array.isArray(params?.slug) ? params.slug[0] : '';
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const [product, setProduct] = useState<ProductData | null>(null);
+  const [allProducts, setAllProducts] = useState<ProductData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -144,7 +51,102 @@ export default function ProductDetailPage() {
   } | null>(null);
   const imageRef = useRef<HTMLDivElement>(null);
 
-  const product = productsData.find((p) => p.slug === slug);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productResponse, allProductsResponse] = await Promise.all([
+          fetch(`/api/products/${slug}`),
+          fetch('/api/products')
+        ]);
+
+        if (productResponse.ok) {
+          const data = await productResponse.json();
+          const productData = data.product;
+          
+          const sizesArray = productData.sizes ? productData.sizes.split(',').map((s: string) => s.trim()) : [];
+          let colorsArray = [];
+          try {
+            colorsArray = JSON.parse(productData.colors || '[]');
+          } catch {
+            colorsArray = [];
+          }
+          
+          let imagesData = [];
+          try {
+            imagesData = JSON.parse(productData.images || '[]');
+          } catch {
+            imagesData = [];
+          }
+          
+          const processedImages = imagesData.map((img: string | ImageWithColors) => {
+            if (typeof img === 'string') {
+              return { url: img, colors: [] };
+            }
+            return img;
+          });
+          
+          setProduct({
+            ...productData,
+            price: `₱${productData.price}`,
+            originalPrice: productData.originalPrice ? `₱${productData.originalPrice}` : null,
+            imagesData: processedImages,
+            images: processedImages.map((img: ImageWithColors) => img.url),
+            sizes: sizesArray,
+            colors: colorsArray,
+            inStock: productData.stock > 0,
+            stockCount: productData.stock,
+          });
+        }
+
+        if (allProductsResponse.ok) {
+          const productsData = await allProductsResponse.json();
+          setAllProducts(productsData.products || []);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [slug]);
+
+  const getFilteredImages = (): string[] => {
+    if (!product) return [];
+    
+    if (!selectedColor || !product.imagesData) {
+      return product.images || [];
+    }
+
+    const filtered = product.imagesData.filter((img) => 
+      img.colors.length === 0 || 
+      img.colors.some(c => c.toLowerCase() === selectedColor.toLowerCase())
+    );
+
+    return filtered.length > 0 ? filtered.map(img => img.url) : product.images;
+  };
+
+  const displayImages = getFilteredImages();
+
+  useEffect(() => {
+    if (product && selectedImage >= displayImages.length && displayImages.length > 0) {
+      setSelectedImage(0);
+    }
+  }, [displayImages.length, selectedImage, product]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-white py-16">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1520px' }}>
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900"></div>
+            <p className="mt-6 text-gray-600 text-lg">Loading product...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (!product) {
     return (
@@ -166,8 +168,13 @@ export default function ProductDetailPage() {
       router.push('/account');
       return;
     }
-    if (!selectedSize || !selectedColor) {
-      alert('Please select a size and color');
+    if (!selectedSize) {
+      showToast('Please select a size');
+      return;
+    }
+    
+    if (product.colors.length > 0 && !selectedColor) {
+      showToast('Please select a color');
       return;
     }
     
@@ -198,7 +205,7 @@ export default function ProductDetailPage() {
       name: product.name,
       price: priceValue,
       size: selectedSize,
-      color: selectedColor,
+      color: selectedColor || 'Default',
       quantity: quantity,
       image: product.images[0],
     });
@@ -241,18 +248,20 @@ export default function ProductDetailPage() {
         <div className="flex gap-12">
           <div className="flex-1">
             <div ref={imageRef} className="relative w-full bg-gray-100 rounded-lg overflow-hidden mb-4" style={{ height: '600px' }}>
-              <Image
-                src={product.images[selectedImage]}
-                alt={product.name}
-                fill
-                className="object-cover"
-                unoptimized
-              />
+              {displayImages[selectedImage] && (
+                <Image
+                  src={displayImages[selectedImage]}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              )}
             </div>
 
-            {product.images.length > 1 && (
-              <div className="flex gap-3">
-                {product.images.map((image, index) => (
+            {displayImages.length > 1 && (
+              <div className="flex gap-3 flex-wrap">
+                {displayImages.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
@@ -275,7 +284,7 @@ export default function ProductDetailPage() {
 
           <div className="flex-1 max-w-lg">
             <div className="mb-4">
-              <span className="inline-block bg-white text-black italic px-3 py-1 rounded-full text-xs font-bold shadow-md">
+              <span className="inline-block bg-white text-black italic px-3 py-1 rounded-full text-xs font-bold shadow-md uppercase">
                 {product.category}
               </span>
             </div>
@@ -302,7 +311,7 @@ export default function ProductDetailPage() {
                   Size
                 </label>
                 <div className="flex flex-wrap gap-3">
-                  {product.sizes.map((size) => (
+                  {product.sizes.map((size: string) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
@@ -318,34 +327,39 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-black mb-3">
-                  Color
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {product.colors.map((color) => (
-                    <button
-                      key={color.name}
-                      onClick={() => setSelectedColor(color.name)}
-                      className={`px-5 py-2.5 border-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                        selectedColor === color.name
-                          ? 'border-gray-900 bg-gray-900 text-white'
-                          : 'border-gray-200 bg-white text-black hover:border-gray-400'
-                      }`}
-                    >
-                      <span
-                        className={`w-5 h-5 rounded-full border ${
+              {product.colors && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0].name === 'Default') && (
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-3">
+                    Color
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {product.colors.map((color: { name: string; value: string }) => (
+                      <button
+                        key={color.name}
+                        onClick={() => {
+                          setSelectedColor(color.name);
+                          setSelectedImage(0);
+                        }}
+                        className={`px-5 py-2.5 border-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                           selectedColor === color.name
-                            ? 'border-white'
-                            : 'border-gray-300'
+                            ? 'border-gray-900 bg-gray-900 text-white'
+                            : 'border-gray-200 bg-white text-black hover:border-gray-400'
                         }`}
-                        style={{ backgroundColor: color.value }}
-                      />
-                      <span>{color.name}</span>
-                    </button>
-                  ))}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded-full border ${
+                            selectedColor === color.name
+                              ? 'border-white'
+                              : 'border-gray-300'
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                        />
+                        <span>{color.name}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-black mb-3">
@@ -420,17 +434,34 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        <YouMightAlsoLike
-          currentProductSlug={product.slug}
-          products={productsData.map((p) => ({
-            slug: p.slug,
-            name: p.name,
-            category: p.category,
-            price: p.price,
-            originalPrice: p.originalPrice,
-            imageSrc: p.images[0],
-          }))}
-        />
+        {allProducts.length > 0 && (
+          <YouMightAlsoLike
+            currentProductSlug={product.slug}
+            products={allProducts.filter((p) => p.slug !== product.slug).map((p) => {
+              let mainImage = '';
+              
+              if (Array.isArray(p.images)) {
+                mainImage = p.images[0] || '';
+              } else if (typeof p.images === 'string') {
+                try {
+                  const imagesArray = JSON.parse(p.images || '[]');
+                  mainImage = imagesArray[0] || '';
+                } catch {
+                  mainImage = '';
+                }
+              }
+              
+              return {
+                slug: p.slug,
+                name: p.name,
+                category: p.category,
+                price: typeof p.price === 'number' ? `₱${p.price}` : p.price,
+                originalPrice: p.originalPrice ? (typeof p.originalPrice === 'number' ? `₱${p.originalPrice}` : p.originalPrice) : null,
+                imageSrc: mainImage,
+              };
+            })}
+          />
+        )}
         </div>
       </main>
     </>

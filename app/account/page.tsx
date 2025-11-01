@@ -108,10 +108,10 @@ export default function AccountPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateLoginForm()) {
-      const success = login(loginData.username, loginData.password);
+      const success = await login(loginData.username, loginData.password);
       if (success) {
         setIsRedirecting(true);
         const isAdmin = loginData.username === 'admin';

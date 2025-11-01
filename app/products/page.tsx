@@ -1,72 +1,56 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FilterSidebar from '@/components/product/FilterSidebar';
 import ProductCard from '@/components/product/ProductCard';
 
-const products = [
-  {
-    id: 1,
-    imageSrc: '/images/products/versatile-long-sleeve.jpg',
-    imageAlt: 'Versatile Long sleeve',
-    category: 'TOPS & TSHIRTS',
-    productName: 'Versatile Long sleeve',
-    price: '₱299',
-    href: '/products/versatile-long-sleeve',
-  },
-  {
-    id: 2,
-    imageSrc: '/images/products/aloha-spirit-polo.jpg',
-    imageAlt: 'Aloha Spirit Polo',
-    category: 'TOPS & TSHIRTS',
-    productName: 'Aloha Spirit Polo',
-    price: '₱599',
-    href: '/products/aloha-spirit-polo',
-  },
-  {
-    id: 3,
-    imageSrc: '/images/products/lush-leaf-print.jpg',
-    imageAlt: 'Lush Leaf Print',
-    category: 'TOPS & TSHIRTS',
-    productName: 'Lush Leaf Print',
-    price: '₱500',
-    href: '/products/lush-leaf-print',
-  },
-  {
-    id: 4,
-    imageSrc: '/images/products/sneakers-grey-cream.jpg',
-    imageAlt: 'Grey sneakers with cream sole',
-    category: 'SHOES',
-    productName: 'Classic Grey Sneakers',
-    price: '₱899',
-    href: '/products/classic-grey-sneakers',
-  },
-  {
-    id: 5,
-    imageSrc: '/images/products/sneakers-grey-white-blue.jpg',
-    imageAlt: 'Grey and white sneakers with blue sole',
-    category: 'SHOES',
-    productName: 'Urban Runner',
-    price: '₱999',
-    href: '/products/urban-runner',
-  },
-  {
-    id: 6,
-    imageSrc: '/images/products/women-outfit-brown.jpg',
-    imageAlt: 'Brown two-piece women outfit',
-    category: 'DRESS',
-    productName: 'Brown Two-Piece Set',
-    price: '₱1299',
-    href: '/products/brown-two-piece-set',
-  },
-];
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  category: string;
+  price: number;
+  originalPrice: number | null;
+  description: string;
+  imageUrl: string;
+  stock: number;
+  sizes: string;
+  colors: string;
+}
 
 function ProductsContent() {
   const searchParams = useSearchParams();
   const offersFilter = searchParams.get('offers');
   const genderFilter = searchParams.get('gender');
   const categoryFilter = searchParams.get('category');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (categoryFilter) {
+          params.append('category', categoryFilter);
+        }
+        
+        const response = await fetch(`/api/products?${params.toString()}`);
+        const data = await response.json();
+        setProducts(data.products || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [categoryFilter]);
+
+  if (loading) {
+    return <div>Loading products...</div>;
+  }
 
   return (
     <div className="flex gap-6">
@@ -79,17 +63,37 @@ function ProductsContent() {
       
       <div style={{ width: '1176px' }}>
         <div className="grid grid-cols-3" style={{ gap: '40px 24px' }}>
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              imageSrc={product.imageSrc}
-              imageAlt={product.imageAlt}
-              category={product.category}
-              productName={product.productName}
-              price={product.price}
-              href={product.href}
-            />
-          ))}
+          {products.map((product) => {
+            let mainImage = '';
+            try {
+              const imagesData = product.images;
+              if (typeof imagesData === 'string') {
+                const imagesArray = JSON.parse(imagesData || '[]');
+                if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+                  const firstImage = imagesArray[0];
+                  mainImage = typeof firstImage === 'string' ? firstImage : (firstImage as { url?: string })?.url || '';
+                }
+              } else if (Array.isArray(imagesData) && imagesData.length > 0) {
+                mainImage = imagesData[0];
+              }
+            } catch (error) {
+              console.error('Error parsing product images:', error);
+            }
+            
+            if (!mainImage) return null;
+            
+            return (
+              <ProductCard
+                key={product.id}
+                imageSrc={mainImage}
+                imageAlt={product.name}
+                category={product.category}
+                productName={product.name}
+                price={`₱${product.price}`}
+                href={`/products/${product.slug}`}
+              />
+            );
+          }).filter(Boolean)}
         </div>
       </div>
     </div>

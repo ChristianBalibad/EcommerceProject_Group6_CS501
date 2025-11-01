@@ -1,65 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CartItem from '@/components/cart/CartItem';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface CartProduct {
-  id: number;
-  imageSrc: string;
-  imageAlt: string;
-  productName: string;
-  category: string;
-  price: string;
-  originalPrice?: string;
-  size?: string;
-  quantity: number;
-  href?: string;
-}
-
-const initialCartItems: CartProduct[] = [
-  {
-    id: 1,
-    imageSrc: '/images/products/versatile-long-sleeve.jpg',
-    imageAlt: 'Versatile Long sleeve',
-    category: 'TOPS & TSHIRTS',
-    productName: 'Versatile Long sleeve',
-    price: '₱299',
-    size: 'M',
-    quantity: 2,
-    href: '/products/versatile-long-sleeve',
-  },
-  {
-    id: 2,
-    imageSrc: '/images/products/sneakers-grey-cream.jpg',
-    imageAlt: 'Grey sneakers with cream sole',
-    category: 'SHOES',
-    productName: 'Classic Grey Sneakers',
-    price: '₱899',
-    originalPrice: '₱1,199',
-    size: '42',
-    quantity: 1,
-    href: '/products/classic-grey-sneakers',
-  },
-  {
-    id: 3,
-    imageSrc: '/images/products/aloha-spirit-polo.jpg',
-    imageAlt: 'Aloha Spirit Polo',
-    category: 'TOPS & TSHIRTS',
-    productName: 'Aloha Spirit Polo',
-    price: '₱599',
-    size: 'L',
-    quantity: 1,
-    href: '/products/aloha-spirit-polo',
-  },
-];
+import { useCart } from '@/contexts/CartContext';
 
 export default function CartPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [cartItems, setCartItems] = useState<CartProduct[]>(initialCartItems);
+  const { items: cartItems, updateQuantity, removeFromCart } = useCart();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -68,37 +19,22 @@ export default function CartPage() {
   }, [isAuthenticated, router]);
 
   const handleQuantityChange = (id: number, quantity: number) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === id ? { ...item, quantity } : item
-      )
-    );
+    updateQuantity(id, quantity);
   };
 
   const handleRemove = (id: number) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
-  };
-
-  const parsePrice = (priceString: string): number => {
-    return parseFloat(priceString.replace('₱', '').replace(',', ''));
+    removeFromCart(id);
   };
 
   const calculateSubtotal = (): number => {
     return cartItems.reduce(
-      (total, item) => total + parsePrice(item.price) * item.quantity,
+      (total, item) => total + item.price * item.quantity,
       0
     );
   };
 
   const calculateDiscount = (): number => {
-    return cartItems.reduce((total, item) => {
-      if (item.originalPrice) {
-        const original = parsePrice(item.originalPrice);
-        const current = parsePrice(item.price);
-        return total + (original - current) * item.quantity;
-      }
-      return total;
-    }, 0);
+    return 0;
   };
 
   const subtotal = calculateSubtotal();
@@ -187,17 +123,15 @@ export default function CartPage() {
                 <CartItem
                   key={item.id}
                   id={item.id}
-                  imageSrc={item.imageSrc}
-                  imageAlt={item.imageAlt}
-                  productName={item.productName}
-                  category={item.category}
-                  price={item.price}
-                  originalPrice={item.originalPrice}
+                  imageSrc={item.image}
+                  imageAlt={item.name}
+                  productName={item.name}
+                  category=""
+                  price={`₱${item.price}`}
                   size={item.size}
                   quantity={item.quantity}
                   onQuantityChange={handleQuantityChange}
                   onRemove={handleRemove}
-                  href={item.href}
                 />
               ))}
             </div>

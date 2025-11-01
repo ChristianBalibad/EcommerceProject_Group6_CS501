@@ -76,9 +76,11 @@ export default function CartItem({
               </h3>
             </Link>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-block bg-white text-black italic px-2 py-0.5 rounded-full text-xs font-bold" style={{ boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
-                {category}
-              </span>
+              {category && (
+                <span className="inline-block bg-white text-black italic px-2 py-0.5 rounded-full text-xs font-bold" style={{ boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
+                  {category}
+                </span>
+              )}
               {size && (
                 <span className="text-sm text-gray-500">
                   Size: {size}

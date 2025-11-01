@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
+
+interface ImageWithColors {
+  url: string;
+  colors: string[];
+}
 
 interface ProductFormData {
   name: string;
@@ -10,15 +17,19 @@ interface ProductFormData {
   price: string;
   originalPrice: string;
   description: string;
-  imageUrl: string;
+  images: Array<ImageWithColors | string>;
+  imagesError?: string;
   stock: string;
   sizes: string;
+  colors: string;
 }
 
 export default function AdminPage() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
+  const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -26,13 +37,13 @@ export default function AdminPage() {
     price: '',
     originalPrice: '',
     description: '',
-    imageUrl: '',
+    images: [],
     stock: '',
     sizes: '',
+    colors: '',
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData, string>>>({});
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -51,16 +62,120 @@ export default function AdminPage() {
 
   const handleInputChange = (field: keyof ProductFormData, value: string) => {
     if (field === 'category') {
-      setFormData((prev) => ({ ...prev, [field]: value, sizes: '' }));
+      setFormData((prev) => ({ ...prev, [field]: value, sizes: '', colors: '' }));
     } else {
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-    if (submitSuccess) {
-      setSubmitSuccess(false);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/avif', 'image/webp', 'image/gif'];
+    const uploadedUrls: string[] = [];
+    const allDetectedColors: string[] = [];
+
+    setIsUploading(true);
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        if (!allowedTypes.includes(file.type)) {
+          showToast(`Skipped ${file.name}: Invalid file type`);
+          continue;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          showToast(`Skipped ${file.name}: File too large (max 5MB)`);
+          continue;
+        }
+
+        const uploadData = new FormData();
+        uploadData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          uploadedUrls.push(data.imageUrl);
+          
+          const detectedColors = extractColorFromFilename(file.name);
+          detectedColors.forEach(color => {
+            if (!allDetectedColors.some(c => c.toLowerCase() === color.toLowerCase())) {
+              allDetectedColors.push(color);
+            }
+          });
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        const imageObjects = uploadedUrls.map((url) => {
+          const filename = url.split('/').pop() || '';
+          const detectedColors = extractColorFromFilename(filename);
+          return {
+            url,
+            colors: detectedColors.length > 0 ? detectedColors : [],
+          };
+        });
+
+        const existingImages = formData.images.map((img) => {
+          if (typeof img === 'string') {
+            return { url: img, colors: [] };
+          }
+          return img as ImageWithColors;
+        });
+        
+        const allImages = [...existingImages, ...imageObjects];
+        
+        setFormData(prev => ({
+          ...prev,
+          images: allImages,
+        }));
+
+        if (allDetectedColors.length > 0) {
+          const currentColors = formData.colors.trim();
+          const existingColors = currentColors ? currentColors.split(',').map((c: string) => c.trim()) : [];
+          const newColors = [...existingColors];
+          
+          allDetectedColors.forEach(color => {
+            if (!newColors.some((c: string) => c.toLowerCase() === color.toLowerCase())) {
+              newColors.push(color);
+            }
+          });
+          
+          handleInputChange('colors', newColors.join(', '));
+          showToast(`${uploadedUrls.length} image(s) uploaded! Detected: ${allDetectedColors.join(', ')}`);
+        } else {
+          showToast(`${uploadedUrls.length} image(s) uploaded (general product images)`);
+        }
+      } else {
+        showToast('No valid images were uploaded');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      showToast('Failed to upload images');
+    } finally {
+      setIsUploading(false);
+      if (e.target) {
+        e.target.value = '';
+      }
     }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData(prev => ({
+      ...prev,
+      images: newImages,
+    }));
   };
 
   const validateForm = (): boolean => {
@@ -88,8 +203,8 @@ export default function AdminPage() {
       newErrors.description = 'Description is required';
     }
 
-    if (!formData.imageUrl.trim()) {
-      newErrors.imageUrl = 'Image URL is required';
+    if (formData.images.length === 0) {
+      newErrors.imagesError = 'At least one product image is required';
     }
 
     if (!formData.stock.trim()) {
@@ -102,6 +217,49 @@ export default function AdminPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const colorMap: { [key: string]: string } = {
+    'black': '#000000',
+    'white': '#FFFFFF',
+    'red': '#FF0000',
+    'blue': '#0000FF',
+    'green': '#00FF00',
+    'yellow': '#FFFF00',
+    'orange': '#FFA500',
+    'purple': '#800080',
+    'pink': '#FFC0CB',
+    'brown': '#8B4513',
+    'gray': '#808080',
+    'grey': '#808080',
+    'navy': '#000080',
+    'beige': '#F5F5DC',
+    'cream': '#FFFDD0',
+  };
+
+  const getColorHex = (colorName: string): string => {
+    const lowerColor = colorName.toLowerCase();
+    return colorMap[lowerColor] || '#000000';
+  };
+
+  const extractColorFromFilename = (filename: string): string[] => {
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '').toLowerCase();
+    const detectedColors: string[] = [];
+    
+    if (nameWithoutExt.includes('lifestyle') || nameWithoutExt.includes('angle')) {
+      return [];
+    }
+    
+    Object.keys(colorMap).forEach(color => {
+      if (nameWithoutExt.includes(`-${color}`) || nameWithoutExt.endsWith(color)) {
+        const capitalizedColor = color.charAt(0).toUpperCase() + color.slice(1);
+        if (!detectedColors.includes(capitalizedColor)) {
+          detectedColors.push(capitalizedColor);
+        }
+      }
+    });
+    
+    return detectedColors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -111,34 +269,59 @@ export default function AdminPage() {
 
     setIsSubmitting(true);
 
-    const productData = {
-      name: formData.name.trim(),
-      category: formData.category.trim(),
-      price: Number(formData.price),
-      originalPrice: formData.originalPrice.trim() ? Number(formData.originalPrice) : null,
-      description: formData.description.trim(),
-      imageUrl: formData.imageUrl.trim(),
-      stock: Number(formData.stock),
-      sizes: formData.sizes.trim() ? formData.sizes.split(',').map(s => s.trim()) : [],
-    };
+    try {
+      const slug = formData.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      
+      const colorsArray = formData.colors.trim() 
+        ? formData.colors.split(',').map(c => c.trim()).filter(c => c)
+        : [];
+      
+      const productData = {
+        name: formData.name.trim(),
+        slug,
+        category: formData.category.trim(),
+        price: formData.price.trim(),
+        originalPrice: formData.originalPrice.trim() || null,
+        description: formData.description.trim(),
+        images: JSON.stringify(formData.images),
+        stock: formData.stock.trim(),
+        sizes: formData.sizes.trim(),
+        colors: JSON.stringify(colorsArray.map(color => ({ name: color, value: getColorHex(color) }))),
+      };
 
-    console.log('Product data ready for backend:', productData);
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
 
-    setTimeout(() => {
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Error creating product:', error);
+        setIsSubmitting(false);
+        return;
+      }
+
       setIsSubmitting(false);
-      setSubmitSuccess(true);
+      showToast('Product added successfully!');
       setFormData({
         name: '',
         category: '',
         price: '',
         originalPrice: '',
         description: '',
-        imageUrl: '',
+        images: [],
         stock: '',
         sizes: '',
+        colors: '',
       });
       setErrors({});
-    }, 1000);
+    } catch (error) {
+      console.error('Error submitting product:', error);
+      setIsSubmitting(false);
+    }
   };
 
   if (!isAuthenticated || user?.role !== 'admin') {
@@ -172,12 +355,6 @@ export default function AdminPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
-            {submitSuccess && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-600 text-sm font-medium">Product added successfully!</p>
-              </div>
-            )}
-
             <div className="mb-4">
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                 Product Name <span className="text-red-500">*</span>
@@ -288,20 +465,73 @@ export default function AdminPage() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-2">
-                Image URL <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Product Image <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                id="imageUrl"
-                value={formData.imageUrl}
-                onChange={(e) => handleInputChange('imageUrl', e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all ${
-                  errors.imageUrl ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholder="/images/products/product-name.jpg"
-              />
-              {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl}</p>}
+              
+              <div className="flex gap-3 mb-3">
+                <label className="flex-1 cursor-pointer">
+                  <div className={`px-4 py-2.5 border rounded-lg text-center transition-all ${
+                    isUploading ? 'bg-gray-100 cursor-wait' : 'bg-black text-white hover:bg-gray-800'
+                  }`}>
+                    {isUploading ? 'Uploading...' : 'Upload Image'}
+                  </div>
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.avif,.webp,.gif"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={isUploading}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {formData.images.length > 0 && (
+                <div className="grid grid-cols-4 gap-3 mb-3">
+                  {formData.images.map((img, index) => {
+                    const imageUrl = typeof img === 'string' ? img : img.url;
+                    const imageColors = typeof img === 'string' ? [] : img.colors;
+                    
+                    return (
+                      <div key={index} className="relative group h-24">
+                        <Image
+                          src={imageUrl}
+                          alt={`Product ${index + 1}`}
+                          fill
+                          className="object-cover rounded-lg border border-gray-200"
+                          unoptimized
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        >
+                          ×
+                        </button>
+                        {index === 0 && (
+                          <span className="absolute bottom-1 left-1 bg-black text-white text-xs px-2 py-0.5 rounded z-10">
+                            Main
+                          </span>
+                        )}
+                        {imageColors.length > 0 && (
+                          <span className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded z-10">
+                            {imageColors.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 mt-2">
+                Upload multiple images. Naming examples:<br/>
+                • Color-specific: <code className="text-black">jordan-1-black.jpg</code>, <code className="text-black">jordan-1-white.jpg</code><br/>
+                • Angles: <code className="text-black">product-angle1.jpg</code>, <code className="text-black">product-angle2.jpg</code><br/>
+                • Lifestyle: <code className="text-black">product-lifestyle1.jpg</code>, <code className="text-black">product-lifestyle2.jpg</code>
+              </p>
+              {errors.imagesError && <p className="text-red-500 text-xs mt-1">{errors.imagesError}</p>}
             </div>
 
             <div className="mb-4">
@@ -353,6 +583,23 @@ export default function AdminPage() {
                 {formData.category === 'shoes' 
                   ? 'Separate sizes with commas. Numbers only for shoes (39, 40, 41, 42)' 
                   : 'Separate sizes with commas. Letters only for clothing (S, M, L, XL)'}
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label htmlFor="colors" className="block text-sm font-medium text-gray-700 mb-2">
+                Available Colors
+              </label>
+              <input
+                type="text"
+                id="colors"
+                value={formData.colors}
+                onChange={(e) => handleInputChange('colors', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all"
+                placeholder="Black, White, Red, Blue"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Separate colors with commas (e.g., Black, White, Red)
               </p>
             </div>
 
