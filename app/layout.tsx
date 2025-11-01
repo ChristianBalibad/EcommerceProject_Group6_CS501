@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import AuthLoader from "@/components/auth/AuthLoader";
+import LayoutWrapper from "@/components/layout/LayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,9 +38,9 @@ export default function RootLayout({
           <CartProvider>
             <ToastProvider>
               <AuthLoader>
-                <Navbar />
-                {children}
-                <Footer />
+                <LayoutWrapper>
+                  {children}
+                </LayoutWrapper>
               </AuthLoader>
             </ToastProvider>
           </CartProvider>

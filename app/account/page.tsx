@@ -26,6 +26,7 @@ export default function AccountPage() {
   const { user, login, logout } = useAuth();
   const urlMode = searchParams.get('mode');
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const isLogin = urlMode === 'signup' ? false : urlMode === 'login' ? true : manualMode === 'signup' ? false : true;
 
@@ -112,7 +113,9 @@ export default function AccountPage() {
     if (validateLoginForm()) {
       const success = login(loginData.username, loginData.password);
       if (success) {
-        router.push('/');
+        setIsRedirecting(true);
+        const isAdmin = loginData.username === 'admin';
+        router.push(isAdmin ? '/admin' : '/');
       } else {
         setLoginError('Invalid username or password');
       }
@@ -136,7 +139,7 @@ export default function AccountPage() {
     setSignupErrors({});
   };
 
-  if (user) {
+  if (user && !isRedirecting) {
     return (
       <main className="min-h-screen bg-white py-8">
         <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '500px' }}>
