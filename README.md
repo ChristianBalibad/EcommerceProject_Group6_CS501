@@ -124,7 +124,9 @@ If port 3000 is already in use:
 # Run on different port
 npm run dev -- -p 3001
 
-## Group Members
+```
+
+Group Members
 
 Group 6 - CS501
 - Balibad, Christian (Developer)
