@@ -26,19 +26,29 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const storedCart = localStorage.getItem('cart');
+      return storedCart ? JSON.parse(storedCart) : [];
+    }
+    return [];
+  });
   const [triggerAnimation, setTriggerAnimation] = useState(false);
 
   useEffect(() => {
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
-      setItems(JSON.parse(storedCart));
-    }
+    const handleLogout = () => {
+      setItems([]);
+    };
+
+    window.addEventListener('logout', handleLogout);
+    return () => window.removeEventListener('logout', handleLogout);
   }, []);
 
   useEffect(() => {
     if (items.length > 0) {
       localStorage.setItem('cart', JSON.stringify(items));
+    } else {
+      localStorage.removeItem('cart');
     }
   }, [items]);
 
