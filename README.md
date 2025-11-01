@@ -126,7 +126,7 @@ npm run dev -- -p 3001
 
 ```
 
-###Group Members
+### Group Members
 
 Group 6 - CS501
 - Balibad, Christian (Developer)
