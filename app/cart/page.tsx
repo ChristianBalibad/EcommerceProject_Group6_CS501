@@ -14,7 +14,7 @@ export default function CartPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/account');
+      router.push('/account?redirect=/cart');
     }
   }, [isAuthenticated, router]);
 
@@ -204,12 +204,6 @@ export default function CartPage() {
                 Proceed to Checkout
               </Link>
 
-              <button
-                type="button"
-                className="w-full bg-white text-black text-center py-3 px-6 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-semibold"
-              >
-                Save for Later
-              </button>
             </div>
           </div>
         </div>

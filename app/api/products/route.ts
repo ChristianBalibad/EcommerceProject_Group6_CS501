@@ -5,12 +5,18 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category');
+    const gender = searchParams.get('gender');
+    const color = searchParams.get('color');
     const search = searchParams.get('search');
 
-    const where: { category?: string; OR?: Array<{ name: { contains: string; mode: string } } | { description: { contains: string; mode: string } }> } = {};
+    const where: { category?: string; gender?: string; OR?: Array<{ name: { contains: string; mode: string } } | { description: { contains: string; mode: string } }> } = {};
 
     if (category) {
       where.category = category;
+    }
+
+    if (gender) {
+      where.gender = gender;
     }
 
     if (search) {
@@ -20,10 +26,27 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const products = await prisma.product.findMany({
+    let products = await prisma.product.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
+
+    if (color) {
+      const colorFilters = color.split(',').map((c: string) => c.trim().toLowerCase()).filter((c: string) => c);
+      
+      if (colorFilters.length > 0) {
+        products = products.filter((product: typeof products[0]) => {
+          try {
+            const productColors = JSON.parse(product.colors || '[]');
+            return productColors.some((c: { name: string }) => 
+              colorFilters.includes(c.name.toLowerCase())
+            );
+          } catch {
+            return false;
+          }
+        });
+      }
+    }
 
     return NextResponse.json({ products });
   } catch (error) {
@@ -42,6 +65,7 @@ export async function POST(request: NextRequest) {
       name,
       slug,
       category,
+      gender,
       price,
       originalPrice,
       description,
@@ -74,6 +98,7 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         category,
+        gender: gender || 'unisex',
         price: parseFloat(price),
         originalPrice: originalPrice ? parseFloat(originalPrice) : null,
         description,

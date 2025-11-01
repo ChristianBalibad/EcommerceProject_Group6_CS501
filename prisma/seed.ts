@@ -37,7 +37,8 @@ async function main() {
     {
       name: 'Versatile Long Sleeve',
       slug: 'versatile-long-sleeve',
-      category: 'TOPS & TSHIRTS',
+      category: 'tops-tshirts',
+      gender: 'unisex',
       price: 299,
       description: 'A versatile long sleeve shirt perfect for any occasion. Made with premium cotton blend for maximum comfort.',
       images: '["/images/products/versatile-long-sleeve.jpg"]',
@@ -48,7 +49,8 @@ async function main() {
     {
       name: 'Aloha Spirit Polo',
       slug: 'aloha-spirit-polo',
-      category: 'TOPS & TSHIRTS',
+      category: 'tops-tshirts',
+      gender: 'men',
       price: 599,
       description: 'Bring the island vibes with this comfortable polo shirt. Features a classic fit and breathable fabric.',
       images: '["/images/products/aloha-spirit-polo.jpg"]',
@@ -59,7 +61,8 @@ async function main() {
     {
       name: 'Lush Leaf Print',
       slug: 'lush-leaf-print',
-      category: 'TOPS & TSHIRTS',
+      category: 'tops-tshirts',
+      gender: 'unisex',
       price: 500,
       description: 'Stand out with this tropical leaf print design. Perfect for summer outings and casual events.',
       images: '["/images/products/lush-leaf-print.jpg"]',
@@ -70,7 +73,8 @@ async function main() {
     {
       name: 'Classic Grey Sneakers',
       slug: 'classic-grey-sneakers',
-      category: 'SHOES',
+      category: 'shoes',
+      gender: 'men',
       price: 899,
       originalPrice: 1299,
       description: 'Stylish grey sneakers with cream sole. Perfect for everyday wear with superior comfort and durability.',
@@ -82,7 +86,8 @@ async function main() {
     {
       name: 'Urban Runner',
       slug: 'urban-runner',
-      category: 'SHOES',
+      category: 'shoes',
+      gender: 'unisex',
       price: 999,
       originalPrice: 1499,
       description: 'Modern athletic sneakers with blue sole. Designed for comfort and style in urban environments.',
@@ -94,7 +99,8 @@ async function main() {
     {
       name: 'Brown Two-Piece Set',
       slug: 'brown-two-piece-set',
-      category: 'DRESS',
+      category: 'dress',
+      gender: 'women',
       price: 1299,
       description: 'Elegant brown two-piece outfit for women. Perfect for both casual and semi-formal occasions.',
       images: '["/images/products/women-outfit-brown.jpg"]',

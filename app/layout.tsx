@@ -8,6 +8,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import AuthLoader from "@/components/auth/AuthLoader";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
+import DevSessionClearer from "@/components/dev/DevSessionClearer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <DevSessionClearer />
         <AuthProvider>
           <CartProvider>
             <ToastProvider>

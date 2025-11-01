@@ -3,6 +3,7 @@
 import { useState, useEffect, startTransition } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 
@@ -20,9 +21,13 @@ interface FormData {
 }
 
 export default function CheckoutPage() {
+  const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
   const { items: cartItems, clearCart } = useCart();
   const [isMounted, setIsMounted] = useState(false);
+  
+  const fromProduct = searchParams.get('from') === 'product';
+  const productSlug = searchParams.get('slug');
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -195,7 +200,7 @@ export default function CheckoutPage() {
       <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1520px' }}>
         <div className="mb-8">
           <Link
-            href="/cart"
+            href={fromProduct && productSlug ? `/products/${productSlug}` : '/cart'}
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
           >
             <svg
@@ -211,7 +216,7 @@ export default function CheckoutPage() {
             >
               <path d="M19 12H5M12 19L5 12L12 5" />
             </svg>
-            Back to Cart
+            {fromProduct ? 'Back to Product' : 'Back to Cart'}
           </Link>
           <h1 className="text-3xl font-bold text-black mb-2">Checkout</h1>
           <p className="text-gray-600">Complete your order below</p>

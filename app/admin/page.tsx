@@ -14,6 +14,7 @@ interface ImageWithColors {
 interface ProductFormData {
   name: string;
   category: string;
+  gender: string;
   price: string;
   originalPrice: string;
   description: string;
@@ -30,10 +31,12 @@ export default function AdminPage() {
   const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     category: '',
+    gender: 'unisex',
     price: '',
     originalPrice: '',
     description: '',
@@ -46,14 +49,20 @@ export default function AdminPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData, string>>>({});
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    
     if (!isAuthenticated) {
-      router.push('/account');
+      window.location.href = '/account';
       return;
     }
     if (user?.role !== 'admin') {
-      router.push('/');
+      window.location.href = '/';
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, isMounted]);
 
   const handleLogout = () => {
     router.push('/account');
@@ -66,8 +75,49 @@ export default function AdminPage() {
     } else {
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    
+    if (field === 'price' || field === 'originalPrice') {
+      const newErrors = { ...errors };
+      
+      if (field === 'price') {
+        const priceNum = Number(value);
+        const origPriceNum = Number(formData.originalPrice);
+        
+        if (value && formData.originalPrice && !isNaN(priceNum) && !isNaN(origPriceNum)) {
+          if (priceNum >= origPriceNum) {
+            newErrors.price = 'Price must be lower than the original price';
+          } else {
+            delete newErrors.price;
+            delete newErrors.originalPrice;
+          }
+        } else {
+          delete newErrors.price;
+          delete newErrors.originalPrice;
+        }
+      }
+      
+      if (field === 'originalPrice') {
+        const priceNum = Number(formData.price);
+        const origPriceNum = Number(value);
+        
+        if (value && formData.price && !isNaN(priceNum) && !isNaN(origPriceNum)) {
+          if (origPriceNum <= priceNum) {
+            newErrors.originalPrice = 'Original price must be higher than the current price';
+          } else {
+            delete newErrors.price;
+            delete newErrors.originalPrice;
+          }
+        } else {
+          delete newErrors.price;
+          delete newErrors.originalPrice;
+        }
+      }
+      
+      setErrors(newErrors);
+    } else {
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: undefined }));
+      }
     }
   };
 
@@ -135,11 +185,7 @@ export default function AdminPage() {
         
         const allImages = [...existingImages, ...imageObjects];
         
-        setFormData(prev => ({
-          ...prev,
-          images: allImages,
-        }));
-
+        let updatedColors = formData.colors;
         if (allDetectedColors.length > 0) {
           const currentColors = formData.colors.trim();
           const existingColors = currentColors ? currentColors.split(',').map((c: string) => c.trim()) : [];
@@ -151,10 +197,19 @@ export default function AdminPage() {
             }
           });
           
-          handleInputChange('colors', newColors.join(', '));
-          showToast(`${uploadedUrls.length} image(s) uploaded! Detected: ${allDetectedColors.join(', ')}`);
+          updatedColors = newColors.join(', ');
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          images: allImages,
+          colors: updatedColors,
+        }));
+
+        if (allDetectedColors.length > 0) {
+          showToast(`${uploadedUrls.length} image(s) uploaded! Colors auto-detected: ${allDetectedColors.join(', ')}`);
         } else {
-          showToast(`${uploadedUrls.length} image(s) uploaded (general product images)`);
+          showToast(`${uploadedUrls.length} image(s) uploaded (general images)`);
         }
       } else {
         showToast('No valid images were uploaded');
@@ -178,6 +233,22 @@ export default function AdminPage() {
     }));
   };
 
+  const handleMakeMainImage = (index: number) => {
+    if (index === 0) return;
+    
+    const newImages = [...formData.images];
+    const clickedImage = newImages[index];
+    newImages.splice(index, 1);
+    newImages.unshift(clickedImage);
+    
+    setFormData(prev => ({
+      ...prev,
+      images: newImages,
+    }));
+    
+    showToast('Main image updated!');
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ProductFormData, string>> = {};
 
@@ -195,8 +266,18 @@ export default function AdminPage() {
       newErrors.price = 'Please enter a valid price';
     }
 
-    if (formData.originalPrice.trim() && (isNaN(Number(formData.originalPrice)) || Number(formData.originalPrice) <= 0)) {
-      newErrors.originalPrice = 'Please enter a valid original price';
+    if (formData.originalPrice.trim()) {
+      if (isNaN(Number(formData.originalPrice)) || Number(formData.originalPrice) <= 0) {
+        newErrors.originalPrice = 'Please enter a valid original price';
+      } else if (Number(formData.originalPrice) <= Number(formData.price)) {
+        newErrors.originalPrice = 'Original price must be higher than the current price';
+      }
+    }
+
+    if (formData.price.trim() && formData.originalPrice.trim()) {
+      if (Number(formData.price) >= Number(formData.originalPrice)) {
+        newErrors.price = 'Price must be lower than the original price';
+      }
     }
 
     if (!formData.description.trim()) {
@@ -233,6 +314,7 @@ export default function AdminPage() {
     'navy': '#000080',
     'beige': '#F5F5DC',
     'cream': '#FFFDD0',
+    'pearl': '#eae0c8',
   };
 
   const getColorHex = (colorName: string): string => {
@@ -244,12 +326,11 @@ export default function AdminPage() {
     const nameWithoutExt = filename.replace(/\.[^/.]+$/, '').toLowerCase();
     const detectedColors: string[] = [];
     
-    if (nameWithoutExt.includes('lifestyle') || nameWithoutExt.includes('angle')) {
-      return [];
-    }
+    const parts = nameWithoutExt.split('-');
+    const lastPart = parts[parts.length - 1];
     
     Object.keys(colorMap).forEach(color => {
-      if (nameWithoutExt.includes(`-${color}`) || nameWithoutExt.endsWith(color)) {
+      if (lastPart === color || lastPart.includes(color)) {
         const capitalizedColor = color.charAt(0).toUpperCase() + color.slice(1);
         if (!detectedColors.includes(capitalizedColor)) {
           detectedColors.push(capitalizedColor);
@@ -280,6 +361,7 @@ export default function AdminPage() {
         name: formData.name.trim(),
         slug,
         category: formData.category.trim(),
+        gender: formData.gender,
         price: formData.price.trim(),
         originalPrice: formData.originalPrice.trim() || null,
         description: formData.description.trim(),
@@ -309,6 +391,7 @@ export default function AdminPage() {
       setFormData({
         name: '',
         category: '',
+        gender: 'unisex',
         price: '',
         originalPrice: '',
         description: '',
@@ -324,8 +407,15 @@ export default function AdminPage() {
     }
   };
 
-  if (!isAuthenticated || user?.role !== 'admin') {
-    return null;
+  if (!isMounted || !isAuthenticated || user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -372,27 +462,46 @@ export default function AdminPage() {
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                Category <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="category"
-                value={formData.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all ${
-                  errors.category ? 'border-red-500' : 'border-gray-200'
-                }`}
-              >
-                <option value="">Select a category</option>
-                <option value="shoes">Shoes</option>
-                <option value="tops-tshirts">Tops & Tshirts</option>
-                <option value="shorts">Shorts</option>
-                <option value="hoodies-jackets">Hoodies & Jackets</option>
-                <option value="trousers-tights">Trousers & Tights</option>
-                <option value="dress">Dress</option>
-              </select>
-              {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all ${
+                    errors.category ? 'border-red-500' : 'border-gray-200'
+                  }`}
+                >
+                  <option value="">Select a category</option>
+                  <option value="shoes">Shoes</option>
+                  <option value="tops-tshirts">Tops & Tshirts</option>
+                  <option value="shorts">Shorts</option>
+                  <option value="hoodies-jackets">Hoodies & Jackets</option>
+                  <option value="trousers-tights">Trousers & Tights</option>
+                  <option value="dress">Dress</option>
+                </select>
+                {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
+                  Gender
+                </label>
+                <select
+                  id="gender"
+                  value={formData.gender}
+                  onChange={(e) => handleInputChange('gender', e.target.value)}
+                  className="w-full px-4 py-2.5 border rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all border-gray-200"
+                >
+                  <option value="unisex">Unisex</option>
+                  <option value="men">Men</option>
+                  <option value="women">Women</option>
+                  <option value="kids">Kids</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -444,6 +553,11 @@ export default function AdminPage() {
                   />
                 </div>
                 {errors.originalPrice && <p className="text-red-500 text-xs mt-1">{errors.originalPrice}</p>}
+                {!errors.originalPrice && formData.originalPrice && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    For discounts: Original price should be higher than the current price
+                  </p>
+                )}
               </div>
             </div>
 
@@ -494,17 +608,25 @@ export default function AdminPage() {
                     const imageColors = typeof img === 'string' ? [] : img.colors;
                     
                     return (
-                      <div key={index} className="relative group h-24">
+                      <div 
+                        key={index} 
+                        className="relative group h-24 cursor-pointer"
+                        onClick={() => handleMakeMainImage(index)}
+                        title={index === 0 ? "Main image" : "Click to make main image"}
+                      >
                         <Image
                           src={imageUrl}
                           alt={`Product ${index + 1}`}
                           fill
-                          className="object-cover rounded-lg border border-gray-200"
+                          className="object-cover rounded-lg border-2 border-gray-200 group-hover:border-gray-400 transition-all"
                           unoptimized
                         />
                         <button
                           type="button"
-                          onClick={() => handleRemoveImage(index)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveImage(index);
+                          }}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         >
                           ×
@@ -526,10 +648,13 @@ export default function AdminPage() {
               )}
 
               <p className="text-xs text-gray-500 mt-2">
-                Upload multiple images. Naming examples:<br/>
-                • Color-specific: <code className="text-black">jordan-1-black.jpg</code>, <code className="text-black">jordan-1-white.jpg</code><br/>
-                • Angles: <code className="text-black">product-angle1.jpg</code>, <code className="text-black">product-angle2.jpg</code><br/>
-                • Lifestyle: <code className="text-black">product-lifestyle1.jpg</code>, <code className="text-black">product-lifestyle2.jpg</code>
+                <strong>Upload multiple images.</strong> Click any image to make it the main product image.<br/>
+                <strong>Naming pattern:</strong> <code className="text-black">productname-[angle/lifestyle]-[color].jpg</code><br/>
+                <strong>Examples:</strong><br/>
+                • <code className="text-black">jordan-1-angle1-black.jpg</code> → Black only<br/>
+                • <code className="text-black">jordan-1-lifestyle-white.jpg</code> → White only<br/>
+                • <code className="text-black">jordan-1-angle1.jpg</code> → General (shows for ALL colors)<br/>
+                <strong>Note:</strong> Images without a color at the end are shown for all color variants.
               </p>
               {errors.imagesError && <p className="text-red-500 text-xs mt-1">{errors.imagesError}</p>}
             </div>

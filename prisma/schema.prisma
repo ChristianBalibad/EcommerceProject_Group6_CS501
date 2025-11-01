@@ -22,6 +22,7 @@ model Product {
   name          String
   slug          String   @unique
   category      String
+  gender        String   @default("unisex")
   price         Float
   originalPrice Float?
   description   String

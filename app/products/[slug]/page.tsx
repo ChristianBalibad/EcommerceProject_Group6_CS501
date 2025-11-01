@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ interface ImageWithColors {
 }
 
 interface ProductData {
+  id: number;
   slug: string;
   name: string;
   category: string;
@@ -86,7 +87,11 @@ export default function ProductDetailPage() {
           });
           
           setProduct({
-            ...productData,
+            id: productData.id,
+            slug: productData.slug,
+            name: productData.name,
+            category: productData.category,
+            description: productData.description,
             price: `₱${productData.price}`,
             originalPrice: productData.originalPrice ? `₱${productData.originalPrice}` : null,
             imagesData: processedImages,
@@ -112,7 +117,7 @@ export default function ProductDetailPage() {
     fetchData();
   }, [slug]);
 
-  const getFilteredImages = (): string[] => {
+  const displayImages = useMemo(() => {
     if (!product) return [];
     
     if (!selectedColor || !product.imagesData) {
@@ -125,15 +130,26 @@ export default function ProductDetailPage() {
     );
 
     return filtered.length > 0 ? filtered.map(img => img.url) : product.images;
-  };
-
-  const displayImages = getFilteredImages();
+  }, [product, selectedColor]);
 
   useEffect(() => {
     if (product && selectedImage >= displayImages.length && displayImages.length > 0) {
       setSelectedImage(0);
     }
   }, [displayImages.length, selectedImage, product]);
+
+  useEffect(() => {
+    if (displayImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setSelectedImage((prev) => {
+        const next = prev + 1;
+        return next >= displayImages.length ? 0 : next;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [displayImages.length]);
 
   if (loading) {
     return (
@@ -165,7 +181,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      router.push('/account');
+      router.push(`/account?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     if (!selectedSize) {
@@ -217,14 +233,30 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = () => {
     if (!isAuthenticated) {
-      router.push('/account');
+      router.push(`/account?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    if (!selectedSize || !selectedColor) {
-      alert('Please select a size and color');
+    if (!selectedSize) {
+      showToast('Please select a size');
       return;
     }
-    router.push('/checkout');
+    
+    if (product.colors.length > 0 && !selectedColor) {
+      showToast('Please select a color');
+      return;
+    }
+
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: parseFloat(product.price.replace('₱', '')),
+      size: selectedSize,
+      color: selectedColor || 'Default',
+      quantity: quantity,
+      image: product.images[0],
+    });
+
+    router.push(`/checkout?from=product&slug=${slug}`);
   };
 
   return (
@@ -314,7 +346,7 @@ export default function ProductDetailPage() {
                   {product.sizes.map((size: string) => (
                     <button
                       key={size}
-                      onClick={() => setSelectedSize(size)}
+                      onClick={() => setSelectedSize(selectedSize === size ? null : size)}
                       className={`px-5 py-2.5 border-2 rounded-lg text-sm font-medium transition-all ${
                         selectedSize === size
                           ? 'border-gray-900 bg-gray-900 text-white'
@@ -337,7 +369,11 @@ export default function ProductDetailPage() {
                       <button
                         key={color.name}
                         onClick={() => {
-                          setSelectedColor(color.name);
+                          if (selectedColor === color.name) {
+                            setSelectedColor(null);
+                          } else {
+                            setSelectedColor(color.name);
+                          }
                           setSelectedImage(0);
                         }}
                         className={`px-5 py-2.5 border-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
@@ -445,7 +481,10 @@ export default function ProductDetailPage() {
               } else if (typeof p.images === 'string') {
                 try {
                   const imagesArray = JSON.parse(p.images || '[]');
-                  mainImage = imagesArray[0] || '';
+                  if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+                    const firstImage = imagesArray[0];
+                    mainImage = typeof firstImage === 'string' ? firstImage : (firstImage as { url?: string })?.url || '';
+                  }
                 } catch {
                   mainImage = '';
                 }
@@ -459,7 +498,7 @@ export default function ProductDetailPage() {
                 originalPrice: p.originalPrice ? (typeof p.originalPrice === 'number' ? `₱${p.originalPrice}` : p.originalPrice) : null,
                 imageSrc: mainImage,
               };
-            })}
+            }).filter((p) => p.imageSrc)}
           />
         )}
         </div>

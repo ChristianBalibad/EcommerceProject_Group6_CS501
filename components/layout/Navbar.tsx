@@ -83,7 +83,7 @@ export default function Navbar() {
                 <span className="text-orange-500">🔥</span>
               </Link>
               <Link
-                href="/products?filter=new"
+                href="/products?arrivals=new"
                 className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
                 New Arrivals

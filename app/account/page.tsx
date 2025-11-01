@@ -115,7 +115,15 @@ export default function AccountPage() {
       if (success) {
         setIsRedirecting(true);
         const isAdmin = loginData.username === 'admin';
-        router.push(isAdmin ? '/admin' : '/');
+        const redirectUrl = searchParams.get('redirect');
+        
+        if (isAdmin) {
+          router.push('/admin');
+        } else if (redirectUrl) {
+          router.push(redirectUrl);
+        } else {
+          router.push('/');
+        }
       } else {
         setLoginError('Invalid username or password');
       }
