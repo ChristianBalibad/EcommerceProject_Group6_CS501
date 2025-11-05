@@ -2,6 +2,9 @@
 
 A modern e-commerce web application built with Next.js, TypeScript, Tailwind CSS, and SQLite.
 
+## Note
+- This project cannot be deployed on github pages because it only supports static html, css, and js. This project is developed using Next.js with server-side functionality/backend, please clone the project and follow the Setup Instructions below. Thank you
+
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, TypeScript
@@ -33,6 +36,7 @@ A modern e-commerce web application built with Next.js, TypeScript, Tailwind CSS
    git clone <repository-url>
    cd EcommerceProject_Group6_CS501/my-app
    ```
+   or Clone in my repository manually.
 
 2. **Install dependencies**
    ```bash
