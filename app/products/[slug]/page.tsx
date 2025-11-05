@@ -98,8 +98,8 @@ export default function ProductDetailPage() {
             name: productData.name,
             category: productData.category,
             description: productData.description,
-            price: `₱${productData.price}`,
-            originalPrice: productData.originalPrice ? `₱${productData.originalPrice}` : null,
+            price: `₱${productData.price.toLocaleString('en-US')}`,
+            originalPrice: productData.originalPrice ? `₱${productData.originalPrice.toLocaleString('en-US')}` : null,
             imagesData: processedImages,
             images: processedImages.map((img: ImageWithColors) => img.url),
             sizes: sizesArray,
@@ -157,12 +157,15 @@ export default function ProductDetailPage() {
         }
       }
       
+      const priceNum = typeof p.price === 'number' ? p.price : parseFloat(String(p.price).replace('₱', '').replace(',', ''));
+      const originalPriceNum = p.originalPrice ? (typeof p.originalPrice === 'number' ? p.originalPrice : parseFloat(String(p.originalPrice).replace('₱', '').replace(',', ''))) : null;
+      
       return {
         slug: p.slug,
         name: p.name,
         category: p.category,
-        price: typeof p.price === 'number' ? `₱${p.price}` : p.price,
-        originalPrice: p.originalPrice ? (typeof p.originalPrice === 'number' ? `₱${p.originalPrice}` : p.originalPrice) : null,
+        price: `₱${priceNum.toLocaleString('en-US')}`,
+        originalPrice: originalPriceNum ? `₱${originalPriceNum.toLocaleString('en-US')}` : null,
         imageSrc: mainImage,
       };
     }).filter((p) => p.imageSrc);
@@ -235,6 +238,8 @@ export default function ProductDetailPage() {
       return;
     }
     
+    const currentImage = displayImages[0] || product.images[0];
+    
     if (imageRef.current) {
       const imageRect = imageRef.current.getBoundingClientRect();
       const cartIcon = document.querySelector('[aria-label="Shopping Cart"]');
@@ -243,7 +248,7 @@ export default function ProductDetailPage() {
         const cartRect = cartIcon.getBoundingClientRect();
         
         setFlyingImage({
-          src: product.images[selectedImage],
+          src: currentImage,
           startPos: {
             x: imageRect.left + imageRect.width / 2 - 64,
             y: imageRect.top + imageRect.height / 2 - 64,
@@ -257,14 +262,16 @@ export default function ProductDetailPage() {
     }
     
     const priceValue = parseFloat(product.price.replace('₱', '').replace(',', ''));
+    const cartId = product.id * 1000 + (selectedColor ? selectedColor.charCodeAt(0) : 0) + (selectedSize ? selectedSize.charCodeAt(0) : 0);
+    
     addToCart({
-      id: product.slug.charCodeAt(0),
+      id: cartId,
       name: product.name,
       price: priceValue,
       size: selectedSize,
       color: selectedColor || 'Default',
       quantity: quantity,
-      image: product.images[0],
+      image: currentImage,
     });
     
     setTimeout(() => {
@@ -287,14 +294,17 @@ export default function ProductDetailPage() {
       return;
     }
 
+    const currentImage = displayImages[0] || product.images[0];
+    const cartId = product.id * 1000 + (selectedColor ? selectedColor.charCodeAt(0) : 0) + (selectedSize ? selectedSize.charCodeAt(0) : 0);
+
     addToCart({
-      id: product.id,
+      id: cartId,
       name: product.name,
-      price: parseFloat(product.price.replace('₱', '')),
+      price: parseFloat(product.price.replace('₱', '').replace(',', '')),
       size: selectedSize,
       color: selectedColor || 'Default',
       quantity: quantity,
-      image: product.images[0],
+      image: currentImage,
     });
 
     router.push(`/checkout?from=product&slug=${slug}`);

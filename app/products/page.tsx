@@ -28,6 +28,7 @@ function ProductsContent() {
   const genderFilter = searchParams.get('gender');
   const categoryFilter = searchParams.get('category');
   const colorFilter = searchParams.get('color');
+  const searchFilter = searchParams.get('search');
   const discountFilter = searchParams.get('discount') || offersFilter;
   const [products, setProducts] = useState<Product[]>([]);
   const [availableColors, setAvailableColors] = useState<string[]>([]);
@@ -48,6 +49,9 @@ function ProductsContent() {
         }
         if (colorFilter) {
           params.append('color', colorFilter);
+        }
+        if (searchFilter) {
+          params.append('search', searchFilter);
         }
         
         const [filteredResponse, allResponse] = await Promise.all([
@@ -96,7 +100,7 @@ function ProductsContent() {
           });
         }
         
-        if (arrivalsFilter !== 'new') {
+        if (arrivalsFilter !== 'new' && !searchFilter) {
           finalProducts = finalProducts.sort(() => Math.random() - 0.5);
         }
         
@@ -135,7 +139,7 @@ function ProductsContent() {
     };
 
     fetchProducts();
-  }, [categoryFilter, genderFilter, colorFilter, arrivalsFilter, discountFilter]);
+  }, [categoryFilter, genderFilter, colorFilter, arrivalsFilter, discountFilter, searchFilter]);
 
   return (
     <div className="flex gap-6">
@@ -160,6 +164,11 @@ function ProductsContent() {
         ) : (
         <>
           <div className="mb-6">
+            {searchFilter && (
+              <p className="text-sm font-medium text-gray-900 mb-2">
+                Search results for &ldquo;{searchFilter}&rdquo;
+              </p>
+            )}
             <p className="text-sm text-gray-600">
               Showing {products.filter((product) => {
                 try {
@@ -197,8 +206,8 @@ function ProductsContent() {
                 imageAlt={product.name}
                 category={product.category}
                 productName={product.name}
-                price={`₱${product.price}`}
-                originalPrice={product.originalPrice ? `₱${product.originalPrice}` : undefined}
+                price={`₱${product.price.toLocaleString('en-US')}`}
+                originalPrice={product.originalPrice ? `₱${product.originalPrice.toLocaleString('en-US')}` : undefined}
                 href={`/products/${product.slug}`}
               />
             );

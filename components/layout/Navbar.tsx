@@ -3,24 +3,91 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 
+interface SearchSuggestion {
+  id: number;
+  name: string;
+  slug: string;
+  category: string;
+  price: number;
+  images: string;
+}
+
+const highlightMatch = (text: string, query: string) => {
+  if (!query.trim()) return text;
+  
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+  return parts.map((part, index) => 
+    part.toLowerCase() === query.toLowerCase() 
+      ? <strong key={index} className="font-bold text-black">{part}</strong>
+      : part
+  );
+};
+
 export default function Navbar() {
+  const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   const { itemCount, triggerAnimation } = useCart();
 
   useEffect(() => {
     if (triggerAnimation) {
-      setAnimateCart(true);
-      setTimeout(() => setAnimateCart(false), 600);
+      queueMicrotask(() => {
+        setAnimateCart(true);
+        setTimeout(() => setAnimateCart(false), 600);
+      });
     }
   }, [triggerAnimation]);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchSuggestions([]);
+        setIsSearchOpen(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/products?search=${encodeURIComponent(searchQuery)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSearchSuggestions((data.products || []).slice(0, 5));
+          setIsSearchOpen(true);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+      }
+    };
+
+    const debounce = setTimeout(() => {
+      fetchSuggestions();
+    }, 300);
+
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const categories = [
     { label: 'Shoes', href: '/products?category=shoes' },
@@ -48,28 +115,111 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center flex-1 justify-center max-w-2xl ml-12 mr-14">
-            <div className="relative w-full">
+            <div ref={searchRef} className="relative w-full">
               <input
                 type="text"
+                value={searchQuery || ''}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    setIsSearchOpen(false);
+                    router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                  } else if (e.key === 'Escape') {
+                    setIsSearchOpen(false);
+                  }
+                }}
+                onFocus={() => {
+                  if (searchSuggestions.length > 0) {
+                    setIsSearchOpen(true);
+                  }
+                }}
                 placeholder="Search products..."
                 className="w-full pl-10 pr-4 py-2.5 bg-white rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-all hover:border-gray-300 shadow-sm hover:shadow"
               />
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              <button
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    setIsSearchOpen(false);
+                    router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                  }
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
               >
-                <path
-                  d="M16.5 16.5L12.875 12.875M14.8333 8.16667C14.8333 11.8486 11.8486 14.8333 8.16667 14.8333C4.48477 14.8333 1.5 11.8486 1.5 8.16667C1.5 4.48477 4.48477 1.5 8.16667 1.5C11.8486 1.5 14.8333 4.48477 14.8333 8.16667Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16.5 16.5L12.875 12.875M14.8333 8.16667C14.8333 11.8486 11.8486 14.8333 8.16667 14.8333C4.48477 14.8333 1.5 11.8486 1.5 8.16667C1.5 4.48477 4.48477 1.5 8.16667 1.5C11.8486 1.5 14.8333 4.48477 14.8333 8.16667Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              {isSearchOpen && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50">
+                  {searchSuggestions.map((product) => {
+                    let mainImage = '';
+                    try {
+                      const imagesArray = JSON.parse(product.images || '[]');
+                      if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+                        const firstImage = imagesArray[0];
+                        mainImage = typeof firstImage === 'string' ? firstImage : (firstImage as { url?: string })?.url || '';
+                      }
+                    } catch {
+                      mainImage = '';
+                    }
+
+                    return (
+                      <Link
+                        key={product.id}
+                        href={`/products/${product.slug}`}
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          setSearchQuery('');
+                        }}
+                        className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                      >
+                        {mainImage && (
+                          <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                            <Image
+                              src={mainImage}
+                              alt={product.name}
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {highlightMatch(product.name, searchQuery)}
+                          </p>
+                          <p className="text-xs text-gray-500">{product.category}</p>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900">₱{product.price.toLocaleString('en-US')}</p>
+                      </Link>
+                    );
+                  })}
+                  {searchQuery.trim().length >= 2 && (
+                    <button
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                      }}
+                      className="w-full p-3 text-sm text-center text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors font-medium"
+                    >
+                      View all results for &ldquo;{searchQuery}&rdquo;
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

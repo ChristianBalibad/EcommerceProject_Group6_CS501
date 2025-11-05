@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -13,6 +12,7 @@ interface CartItemProps {
   price: string;
   originalPrice?: string;
   size?: string;
+  color?: string;
   quantity: number;
   onQuantityChange: (id: number, quantity: number) => void;
   onRemove: (id: number) => void;
@@ -28,6 +28,7 @@ export default function CartItem({
   price,
   originalPrice,
   size,
+  color,
   quantity,
   onQuantityChange,
   onRemove,
@@ -81,12 +82,14 @@ export default function CartItem({
                   {category}
                 </span>
               )}
-              {size && (
-                <span className="text-sm text-gray-500">
-                  Size: {size}
-                </span>
-              )}
             </div>
+            {(size || color) && (
+              <div className="text-sm text-gray-500 mb-2">
+                {color && color !== 'Default' && <span>Color: {color}</span>}
+                {size && color && color !== 'Default' && <span> • </span>}
+                {size && <span>Size: {size}</span>}
+              </div>
+            )}
             <div className="flex items-center gap-2 mb-3">
               {originalPrice && (
                 <span className="text-sm text-gray-400 line-through">

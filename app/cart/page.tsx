@@ -131,8 +131,9 @@ export default function CartPage() {
                   imageAlt={item.name}
                   productName={item.name}
                   category=""
-                  price={`₱${item.price}`}
+                  price={`₱${item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   size={item.size}
+                  color={item.color}
                   quantity={item.quantity}
                   onQuantityChange={handleQuantityChange}
                   onRemove={handleRemove}

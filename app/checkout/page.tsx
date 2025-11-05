@@ -490,7 +490,9 @@ export default function CheckoutPage() {
                             {item.name}
                           </h3>
                           <p className="text-xs text-gray-500 mb-1">
-                            {item.size && `Size: ${item.size} • `}Qty: {item.quantity}
+                            {item.color && item.color !== 'Default' && `Color: ${item.color} • `}
+                            {item.size && `Size: ${item.size} • `}
+                            Qty: {item.quantity}
                           </p>
                           <p className="text-sm font-semibold text-black">
                             ₱{itemTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

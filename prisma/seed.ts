@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('Starting database seed...');
 
   const hashedAdminPassword = await bcrypt.hash('admin', 10);
   const hashedCustomerPassword = await bcrypt.hash('customer', 10);

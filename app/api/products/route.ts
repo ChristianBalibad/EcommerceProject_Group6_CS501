@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const color = searchParams.get('color');
     const search = searchParams.get('search');
 
-    const where: { category?: string; gender?: string; OR?: Array<{ name: { contains: string; mode: string } } | { description: { contains: string; mode: string } }> } = {};
+    const where: { category?: string; gender?: string } = {};
 
     if (category) {
       where.category = category;
@@ -19,17 +19,18 @@ export async function GET(request: NextRequest) {
       where.gender = gender;
     }
 
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
     let products = await prisma.product.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      products = products.filter((product) => 
+        product.name.toLowerCase().includes(searchLower) || 
+        product.description.toLowerCase().includes(searchLower)
+      );
+    }
 
     if (color) {
       const colorFilters = color.split(',').map((c: string) => c.trim().toLowerCase()).filter((c: string) => c);
