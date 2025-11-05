@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface FilterSection {
@@ -68,6 +68,70 @@ export default function FilterSidebar({ initialFilter, initialDiscount, initialA
   const [selectedNewArrival, setSelectedNewArrival] = useState<string>(
     initialCategory === 'shoes' || initialCategory === 'sneakers' ? 'shoes' : (initialCategory || '')
   );
+  
+  const prevCategoryRef = useRef(initialCategory);
+  const prevArrivalsRef = useRef(initialArrivals);
+  const prevFilterRef = useRef(initialFilter);
+  const prevDiscountRef = useRef(initialDiscount);
+  const prevGenderRef = useRef(initialGender);
+
+  useEffect(() => {
+    if (prevCategoryRef.current !== initialCategory) {
+      const categoryValue = initialCategory === 'shoes' || initialCategory === 'sneakers' 
+        ? 'shoes' 
+        : (initialCategory || '');
+      queueMicrotask(() => {
+        setSelectedNewArrival(categoryValue);
+      });
+      prevCategoryRef.current = initialCategory;
+    }
+  }, [initialCategory]);
+
+  useEffect(() => {
+    const hasChanged = 
+      prevArrivalsRef.current !== initialArrivals ||
+      prevFilterRef.current !== initialFilter ||
+      prevDiscountRef.current !== initialDiscount ||
+      prevGenderRef.current !== initialGender;
+
+    if (hasChanged) {
+      queueMicrotask(() => {
+        const newSet = new Set<string>();
+        
+        if (initialArrivals === 'new') {
+          newSet.add('new');
+        }
+        
+        if (initialFilter === 'up-to-60-off') {
+          newSet.add('up-to-60-off');
+        }
+        
+        if (initialDiscount) {
+          newSet.add(initialDiscount);
+        }
+        
+        if (initialGender) {
+          newSet.add(initialGender);
+        }
+        
+        const colorParam = searchParams.get('color');
+        if (colorParam) {
+          colorParam.split(',').forEach(color => {
+            if (color.trim()) {
+              newSet.add(color.trim());
+            }
+          });
+        }
+        
+        setSelectedFilters(newSet);
+      });
+      
+      prevArrivalsRef.current = initialArrivals;
+      prevFilterRef.current = initialFilter;
+      prevDiscountRef.current = initialDiscount;
+      prevGenderRef.current = initialGender;
+    }
+  }, [initialArrivals, initialFilter, initialDiscount, initialGender, searchParams]);
 
   const allNewArrivalItems = [
     { label: 'Shoes', value: 'shoes' },
@@ -80,7 +144,7 @@ export default function FilterSidebar({ initialFilter, initialDiscount, initialA
 
   const getFilteredNewArrivalItems = () => {
     const selectedGender = Array.from(selectedFilters).find(f => ['men', 'women', 'kids', 'unisex'].includes(f)) || initialGender;
-    const shouldShowDress = selectedGender === 'women' || selectedGender === 'kids';
+    const shouldShowDress = selectedGender === 'women' || selectedGender === 'kids' || initialCategory === 'dress';
 
     return allNewArrivalItems.filter(item => {
       if (item.value === 'dress') {
@@ -205,8 +269,9 @@ export default function FilterSidebar({ initialFilter, initialDiscount, initialA
               >
                 <div className={section.title === 'Colour' ? 'grid grid-cols-2 gap-2' : 'flex flex-col gap-2'}>
                   {section.items.map((item) => {
-                    const isNewArrivals = section.title === 'New Arrivals' || section.title === 'Categories';
-                    const isChecked = isNewArrivals 
+                    const isCategorySection = section.title === 'Categories';
+                    const isNewArrivalsSection = section.title === 'New Arrivals';
+                    const isChecked = isCategorySection
                       ? selectedNewArrival === item.value 
                       : selectedFilters.has(item.value);
                     
@@ -216,29 +281,52 @@ export default function FilterSidebar({ initialFilter, initialDiscount, initialA
                         className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity py-1"
                       >
                         <input
-                          type={isNewArrivals ? 'radio' : 'checkbox'}
-                          name={isNewArrivals ? 'new-arrivals' : id}
+                          type={isCategorySection ? 'radio' : 'checkbox'}
+                          name={isCategorySection ? 'category' : id}
                           value={item.value}
                           checked={isChecked}
                           onClick={(e) => {
-                            if (isNewArrivals) {
+                            if (isCategorySection) {
                               if (selectedNewArrival === item.value) {
                                 e.preventDefault();
                                 setSelectedNewArrival('');
                                 const params = new URLSearchParams(searchParams.toString());
                                 params.delete('category');
-                                router.push(`/products?${params.toString()}`, { scroll: false });
+                                const queryString = params.toString();
+                                router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false });
                               }
                             }
                           }}
                           onChange={(e) => {
-                            if (isNewArrivals) {
+                            if (isCategorySection) {
                               if (selectedNewArrival !== e.target.value) {
                                 setSelectedNewArrival(e.target.value);
                                 const params = new URLSearchParams(searchParams.toString());
                                 params.set('category', e.target.value);
-                                router.push(`/products?${params.toString()}`, { scroll: false });
+                                const queryString = params.toString();
+                                router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false });
                               }
+                            } else if (isNewArrivalsSection) {
+                              const newSet = new Set(selectedFilters);
+                              if (e.target.checked) {
+                                newSet.add(item.value);
+                              } else {
+                                newSet.delete(item.value);
+                              }
+                              setSelectedFilters(newSet);
+                              
+                              const params = new URLSearchParams(searchParams.toString());
+                              
+                              if (item.value === 'new') {
+                                if (e.target.checked) {
+                                  params.set('arrivals', item.value);
+                                } else {
+                                  params.delete('arrivals');
+                                }
+                              }
+                              
+                              const queryString = params.toString();
+                              router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false });
                             } else {
                               const newSet = new Set(selectedFilters);
                               if (e.target.checked) {
@@ -254,16 +342,10 @@ export default function FilterSidebar({ initialFilter, initialDiscount, initialA
                               if (discountValues.includes(item.value)) {
                                 if (e.target.checked) {
                                   params.set('discount', item.value);
+                                  params.delete('offers');
                                 } else {
                                   params.delete('discount');
-                                }
-                              }
-                              
-                              if (item.value === 'new') {
-                                if (e.target.checked) {
-                                  params.set('arrivals', item.value);
-                                } else {
-                                  params.delete('arrivals');
+                                  params.delete('offers');
                                 }
                               }
                               
@@ -298,10 +380,11 @@ export default function FilterSidebar({ initialFilter, initialDiscount, initialA
                                 }
                               }
                               
-                              router.push(`/products?${params.toString()}`, { scroll: false });
+                              const queryString = params.toString();
+                              router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false });
                             }
                           }}
-                          className={`${isNewArrivals ? 'w-4 h-4' : 'w-4 h-4'} border-gray-300 ${isNewArrivals ? '' : 'rounded'} text-black focus:ring-black cursor-pointer`}
+                          className={`w-4 h-4 border-gray-300 ${isCategorySection ? '' : 'rounded'} text-black focus:ring-black cursor-pointer`}
                         />
                         <span className="text-sm text-black">{item.label}</span>
                       </label>

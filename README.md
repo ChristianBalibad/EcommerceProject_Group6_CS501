@@ -137,3 +137,13 @@ Group 6 - CS501
 ---
 
 For questions or issues, please dm/pm the development team.
+
+---
+
+## Disclaimer
+
+**Educational Use Only**
+
+This project is a school assignment created for CS501. All product images, names, descriptions, and branding are property of Nike, Inc. and are used solely for educational purposes as part of this academic project. This is not a commercial application and is not affiliated with, endorsed by, or sponsored by Nike, Inc.
+
+All trademarks, logos, and brand names are the property of their respective owners.

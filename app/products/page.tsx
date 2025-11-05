@@ -28,7 +28,7 @@ function ProductsContent() {
   const genderFilter = searchParams.get('gender');
   const categoryFilter = searchParams.get('category');
   const colorFilter = searchParams.get('color');
-  const discountFilter = searchParams.get('discount');
+  const discountFilter = searchParams.get('discount') || offersFilter;
   const [products, setProducts] = useState<Product[]>([]);
   const [availableColors, setAvailableColors] = useState<string[]>([]);
   const [newArrivalsCount, setNewArrivalsCount] = useState(0);
@@ -96,6 +96,10 @@ function ProductsContent() {
           });
         }
         
+        if (arrivalsFilter !== 'new') {
+          finalProducts = finalProducts.sort(() => Math.random() - 0.5);
+        }
+        
         setProducts(finalProducts);
         
         const colorsSet = new Set<string>();
@@ -154,7 +158,24 @@ function ProductsContent() {
             </div>
           </div>
         ) : (
-        <div className="grid grid-cols-3" style={{ gap: '40px 24px' }}>
+        <>
+          <div className="mb-6">
+            <p className="text-sm text-gray-600">
+              Showing {products.filter((product) => {
+                try {
+                  const imagesArray = JSON.parse(product.images || '[]');
+                  if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+                    const firstImage = imagesArray[0];
+                    return typeof firstImage === 'string' ? firstImage : (firstImage as { url?: string })?.url;
+                  }
+                  return false;
+                } catch {
+                  return false;
+                }
+              }).length} products
+            </p>
+          </div>
+          <div className="grid grid-cols-3" style={{ gap: '40px 24px' }}>
           {products.map((product) => {
             let mainImage = '';
             try {
@@ -182,7 +203,8 @@ function ProductsContent() {
               />
             );
           }).filter(Boolean)}
-        </div>
+          </div>
+        </>
         )}
       </div>
     </div>

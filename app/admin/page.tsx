@@ -314,6 +314,14 @@ export default function AdminPage() {
     'beige': '#F5F5DC',
     'cream': '#FFFDD0',
     'pearl': '#eae0c8',
+    'mint-blue': '#98FBCB',
+    'maroon': '#800000',
+    'light-blue': '#d6ecf3',
+    'light-army': '#808972',
+    'dark-green': '#182c25',
+    'dark-blue': '#03002e',
+    'light-lavender': '#DFC5FE',
+    'khaki': '#c7bfa7'
   };
 
   const getColorHex = (colorName: string): string => {

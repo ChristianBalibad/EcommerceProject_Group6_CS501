@@ -137,6 +137,42 @@ export default function ProductDetailPage() {
     return filtered.length > 0 ? filtered.map(img => img.url) : product.images;
   }, [product, selectedColor]);
 
+  const randomizedProducts = useMemo(() => {
+    if (!product) return [];
+    
+    const processedProducts = allProducts.filter((p) => p.slug !== product.slug).map((p) => {
+      let mainImage = '';
+      
+      if (Array.isArray(p.images)) {
+        mainImage = p.images[0] || '';
+      } else if (typeof p.images === 'string') {
+        try {
+          const imagesArray = JSON.parse(p.images || '[]');
+          if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+            const firstImage = imagesArray[0];
+            mainImage = typeof firstImage === 'string' ? firstImage : (firstImage as { url?: string })?.url || '';
+          }
+        } catch {
+          mainImage = '';
+        }
+      }
+      
+      return {
+        slug: p.slug,
+        name: p.name,
+        category: p.category,
+        price: typeof p.price === 'number' ? `₱${p.price}` : p.price,
+        originalPrice: p.originalPrice ? (typeof p.originalPrice === 'number' ? `₱${p.originalPrice}` : p.originalPrice) : null,
+        imageSrc: mainImage,
+      };
+    }).filter((p) => p.imageSrc);
+    
+    const sameCategory = processedProducts.filter((p) => p.category === product.category).sort(() => Math.random() - 0.5);
+    const otherProducts = processedProducts.filter((p) => p.category !== product.category).sort(() => Math.random() - 0.5);
+    
+    return [...sameCategory, ...otherProducts].slice(0, 20);
+  }, [allProducts, product]);
+
   useEffect(() => {
     if (product && selectedImage >= displayImages.length && displayImages.length > 0) {
       setSelectedImage(0);
@@ -475,35 +511,10 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {allProducts.length > 0 && (
+        {randomizedProducts.length > 0 && product && (
           <YouMightAlsoLike
             currentProductSlug={product.slug}
-            products={allProducts.filter((p) => p.slug !== product.slug).map((p) => {
-              let mainImage = '';
-              
-              if (Array.isArray(p.images)) {
-                mainImage = p.images[0] || '';
-              } else if (typeof p.images === 'string') {
-                try {
-                  const imagesArray = JSON.parse(p.images || '[]');
-                  if (Array.isArray(imagesArray) && imagesArray.length > 0) {
-                    const firstImage = imagesArray[0];
-                    mainImage = typeof firstImage === 'string' ? firstImage : (firstImage as { url?: string })?.url || '';
-                  }
-                } catch {
-                  mainImage = '';
-                }
-              }
-              
-              return {
-                slug: p.slug,
-                name: p.name,
-                category: p.category,
-                price: typeof p.price === 'number' ? `₱${p.price}` : p.price,
-                originalPrice: p.originalPrice ? (typeof p.originalPrice === 'number' ? `₱${p.originalPrice}` : p.originalPrice) : null,
-                imageSrc: mainImage,
-              };
-            }).filter((p) => p.imageSrc)}
+            products={randomizedProducts}
           />
         )}
         </div>
